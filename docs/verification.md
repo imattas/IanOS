@@ -55,7 +55,7 @@ The verifier performs the following gates:
   and reads, default `/dev/tty` fd 0/1/2 process descriptors,
   `/proc/self/fd/1` readlink and realpath resolution under stdout redirection,
   `/dev/null`, `/dev/zero`, `/dev/tty`, and `/dev/console` character-device
-  metadata plus bounded `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/findmnt.elf`, `/bin/iostat.elf`, `/bin/lsmem.elf`, `/bin/fbset.elf`, `/bin/lspci.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`,
+  metadata plus bounded `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/findmnt.elf`, `/bin/iostat.elf`, `/bin/lsmem.elf`, `/bin/fbset.elf`, `/bin/lspci.elf`, `/bin/irqstat.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`,
   and `/bin/ttyread.elf` input-mode, read/write, mode-switch, canonical stdin,
   `/bin/clear.elf` terminal-clear execution, and terminal-read idle proof,
   AHCI-backed `/disk/bootsector.bin`, block-cache self-test markers,
