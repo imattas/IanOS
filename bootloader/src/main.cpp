@@ -72,6 +72,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\sha256sum.elf", "/bin/sha256sum.elf"},
     {L"\\bin\\cmp.elf", "/bin/cmp.elf"},
     {L"\\bin\\strings.elf", "/bin/strings.elf"},
+    {L"\\bin\\nl.elf", "/bin/nl.elf"},
     {L"\\bin\\sh.elf", "/bin/sh.elf"},
     {L"\\bin\\duptest.elf", "/bin/duptest.elf"},
     {L"\\bin\\fds.elf", "/bin/fds.elf"},
