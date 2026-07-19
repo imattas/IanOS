@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build IanOS image
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        shell: powershell
+        run: |
+          choco install llvm cmake ninja nasm python -y --no-progress
+          "C:\Program Files\LLVM\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+          "C:\Program Files\NASM" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+
+      - name: Build
+        shell: powershell
+        run: .\scripts\build.ps1
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ianos-kernel-img
+          path: |
+            build/out/image/kernel.img
+            build/out/manifest.txt
+          if-no-files-found: error

@@ -1,0 +1,50 @@
+name: Feature request
+description: Propose an OS, kernel, bootloader, driver, or userland improvement.
+title: "[feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What should IanOS gain?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - bootloader
+        - kernel-core
+        - scheduler
+        - memory-management
+        - filesystem
+        - driver-framework
+        - userland
+        - shell
+        - recovery
+        - tooling
+        - documentation
+    validations:
+      required: true
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use Case
+      description: What user or developer workflow does this enable?
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Proposed Design
+      description: Describe ABI, boot, kernel, or userland interface changes if known.
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation Plan
+      placeholder: |
+        - Build with .\scripts\build.ps1
+        - Boot with .\scripts\verify.ps1 -TimeoutSeconds 300
+        - Add targeted tests for ...

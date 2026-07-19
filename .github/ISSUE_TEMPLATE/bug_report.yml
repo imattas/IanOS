@@ -1,0 +1,72 @@
+name: Bug report
+description: Report a build, boot, kernel, driver, or userland bug.
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What broke?
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - bootloader
+        - kernel
+        - memory-management
+        - interrupts-apic-smp
+        - drivers
+        - filesystem
+        - userspace
+        - shell
+        - build-scripts
+        - qemu-ovmf
+        - documentation
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction Steps
+      description: Include the exact command you ran.
+      placeholder: |
+        1. Run .\scripts\build.ps1
+        2. Run .\scripts\run.ps1
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or Screenshots
+      description: Paste relevant serial output from build/qemu-serial.log or attach a screenshot.
+      render: text
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      value: |
+        Host OS:
+        QEMU version:
+        OVMF path:
+        LLVM/Clang version:
+        CMake version:
+        NASM version:
+    validations:
+      required: true
