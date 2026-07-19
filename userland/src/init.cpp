@@ -2457,6 +2457,7 @@ void run_boot_shell_script() {
     run_command("basename", "/user/init.elf");
     run_command("dirname", "/user/init.elf");
     run_command("head", "/etc/os-release");
+    run_command("head", "-n 2 /etc/os-release");
     run_command("tail", "/etc/os-release");
     char test_chain[128];
     copy_text(test_chain, sizeof(test_chain), "test -d /tmp && echo test-dir-ok ; test -f /bin/hello.elf && echo test-file-ok ; test -e /missing || echo test-missing-ok");
