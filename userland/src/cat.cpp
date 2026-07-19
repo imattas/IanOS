@@ -115,36 +115,14 @@ hybrid::SyscallResult read_blocking(uint64_t fd, char* buffer, uint64_t size) {
     }
 }
 
-} // namespace
-
-extern "C" [[noreturn]] void _start() {
-    hybrid::ArgumentInfo path;
-    clear_argument(path);
-    uint64_t fd = hybrid::kStdinFd;
-    bool close_when_done = false;
-    auto argc = syscall(hybrid::SyscallNumber::GetArgumentCount);
-    if (argc.error != hybrid::kSyscallErrorNone || argc.value < 2 ||
-        syscall(hybrid::SyscallNumber::GetArgument, 1, reinterpret_cast<uint64_t>(&path)).error != hybrid::kSyscallErrorNone) {
-        write_path_line("<stdin>");
-    } else {
-        write_path_line(path.value);
-        auto opened = syscall(hybrid::SyscallNumber::Open, reinterpret_cast<uint64_t>(path.value), strlen(path.value) + 1);
-        if (opened.error != hybrid::kSyscallErrorNone || opened.value < 3) {
-            write_hex_line("open error ", opened.error);
-            syscall(hybrid::SyscallNumber::Exit, 3);
-        }
-        fd = opened.value;
-        close_when_done = true;
-    }
-
+bool read_and_write_stream(uint64_t fd, uint64_t& total) {
     char bytes[16];
     auto read = read_blocking(fd, bytes, sizeof(bytes));
     if (read.error != hybrid::kSyscallErrorNone || read.value < 4) {
-        if (close_when_done) syscall(hybrid::SyscallNumber::Close, fd);
         write_hex_line("read error ", read.error);
-        syscall(hybrid::SyscallNumber::Exit, 4);
+        return false;
     }
-    uint64_t total = read.value;
+    total += read.value;
     write_hex_line("bytes ", read.value);
     write_hex_line("first32 ", first32(bytes));
     if (is_text_chunk(bytes, read.value)) {
@@ -157,7 +135,43 @@ extern "C" [[noreturn]] void _start() {
             write_bytes(bytes, next.value);
         }
     }
-    if (close_when_done) syscall(hybrid::SyscallNumber::Close, fd);
+    return true;
+}
+
+bool cat_path(const char* path, uint64_t& total) {
+    write_path_line(path);
+    auto opened = syscall(hybrid::SyscallNumber::Open, reinterpret_cast<uint64_t>(path), strlen(path) + 1);
+    if (opened.error != hybrid::kSyscallErrorNone || opened.value < 3) {
+        write_hex_line("open error ", opened.error);
+        return false;
+    }
+    const bool ok = read_and_write_stream(opened.value, total);
+    syscall(hybrid::SyscallNumber::Close, opened.value);
+    return ok;
+}
+
+} // namespace
+
+extern "C" [[noreturn]] void _start() {
+    auto argc = syscall(hybrid::SyscallNumber::GetArgumentCount);
+    uint64_t total = 0;
+    if (argc.error != hybrid::kSyscallErrorNone || argc.value < 2) {
+        write_path_line("<stdin>");
+        if (!read_and_write_stream(hybrid::kStdinFd, total)) {
+            syscall(hybrid::SyscallNumber::Exit, 4);
+        }
+    } else {
+        for (uint64_t index = 1; index < argc.value; ++index) {
+            hybrid::ArgumentInfo path;
+            clear_argument(path);
+            if (syscall(hybrid::SyscallNumber::GetArgument, index, reinterpret_cast<uint64_t>(&path)).error != hybrid::kSyscallErrorNone) {
+                syscall(hybrid::SyscallNumber::Exit, 4);
+            }
+            if (!cat_path(path.value, total)) {
+                syscall(hybrid::SyscallNumber::Exit, 3);
+            }
+        }
+    }
     syscall(hybrid::SyscallNumber::Exit, total);
     for (;;) asm volatile("pause");
 }

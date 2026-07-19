@@ -213,6 +213,8 @@ for both memory-backed user programs and disk-backed kernel images.
 `/bin/sha256sum.elf` implements SHA-256 in freestanding userspace and hashes
 path-backed or stdin-backed descriptor streams, with boot verification against
 stable identity files.
+`/bin/cat.elf` accepts stdin or one or more path arguments, opening each path in
+order through process-local descriptors and streaming text files to stdout.
 `/bin/cksum.elf` computes CRC32 over descriptor-backed streams, boot-proven
 against `/etc/hostname`.
 `/bin/fold.elf` wraps descriptor-backed text at a bounded column width and is

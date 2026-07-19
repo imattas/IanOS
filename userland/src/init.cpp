@@ -2482,6 +2482,7 @@ void run_boot_shell_script() {
     run_command("/bin/ls.elf", "/mnt/boot/user");
     run_command("/bin/cat.elf", "/etc/os-release");
     run_command("/bin/cat.elf", "/etc/hostname");
+    run_command("/bin/cat.elf", "/etc/hostname /proc/sys/kernel/hostname");
     run_command("/bin/cat.elf", "/proc/version");
     run_command("/bin/cat.elf", "/proc/meminfo");
     run_command("/bin/cat.elf", "/proc/uptime");
