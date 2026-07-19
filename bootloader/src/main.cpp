@@ -43,6 +43,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\sysctl.elf", "/bin/sysctl.elf"},
     {L"\\bin\\id.elf", "/bin/id.elf"},
     {L"\\bin\\ids.elf", "/bin/ids.elf"},
+    {L"\\bin\\groups.elf", "/bin/groups.elf"},
     {L"\\bin\\ctx.elf", "/bin/ctx.elf"},
     {L"\\bin\\echo.elf", "/bin/echo.elf"},
     {L"\\bin\\sleep.elf", "/bin/sleep.elf"},

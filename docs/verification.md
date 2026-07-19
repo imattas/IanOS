@@ -61,7 +61,7 @@ The verifier performs the following gates:
   AHCI-backed `/disk/bootsector.bin`, block-cache self-test markers,
   recursive read-only FAT16 `/mnt/boot` mount proof plus userspace-visible mount-table output,
   RTC-backed external `date`, argument-backed external `cal`,
-  `/etc/hostname`, `/proc/sys/kernel/*` identity files, multi-file external `cat` and `wc`, external `hostname`, external `id`, external `whoami`,
+  `/etc/hostname`, `/proc/sys/kernel/*` identity files, multi-file external `cat` and `wc`, external `hostname`, external `id`, external `groups`, external `whoami`,
   `basename`, `dirname`, option-bounded `head` and `tail`, and quiet
   `test` predicates chained through `&&`/`||`, external `sort`/`uniq -c`/`uniq -d`/`uniq -u`/`find`/`hexdump`/`od`/`base64`/`which`/`readelf`/`file`/`sha256sum`/`sha224sum`/`sha512sum`/`sha384sum`/`sha1sum`/`md5sum`/`cksum`/`fold`/`printf`/`dd`/`xargs`/`yes`/`cmp`/`strings`/`nl`/`tr`/`sed`/`cut`/`paste`/`rev`/`tac`/`seq`/`expr`/`nproc`, and
   bounded `sh` script execution from a VFS file,
