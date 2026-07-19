@@ -4,15 +4,15 @@ namespace hybrid::version {
 
 #define HYBRID_OS_NAME "IanOS"
 #define HYBRID_OS_ID "ianos"
-#define HYBRID_OS_VERSION "0.1.47"
+#define HYBRID_OS_VERSION "0.1.48"
 #define HYBRID_MACHINE "x86_64"
-#define HYBRID_OS_RELEASE "0.1.47-x86_64"
+#define HYBRID_OS_RELEASE "0.1.48-x86_64"
 #define HYBRID_KERNEL_NAME "Mattas"
-#define HYBRID_KERNEL_VERSION "0.1.47-stable"
+#define HYBRID_KERNEL_VERSION "0.1.48-stable"
 #define HYBRID_KERNEL_FLAVOR "stable"
 #define HYBRID_KERNEL_TYPE "hybrid"
-#define HYBRID_KERNEL_DISPLAY "Mattas 0.1.47-stable"
-#define HYBRID_PROC_VERSION "Mattas 0.1.47-stable x86_64 uefi hybrid"
+#define HYBRID_KERNEL_DISPLAY "Mattas 0.1.48-stable"
+#define HYBRID_PROC_VERSION "Mattas 0.1.48-stable x86_64 uefi hybrid"
 
 constexpr const char* kOsName = HYBRID_OS_NAME;
 constexpr const char* kOsId = HYBRID_OS_ID;
