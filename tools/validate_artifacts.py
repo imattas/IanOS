@@ -96,7 +96,7 @@ def check_pe(path: pathlib.Path) -> int:
 def main() -> int:
     out_dir = pathlib.Path(sys.argv[1])
     esp_dir = pathlib.Path(sys.argv[2])
-    user_programs = ("hello", "args", "cat", "ls", "uname", "hostname", "free", "uptime", "date", "dmesg", "ps", "pwd", "env", "sysinfo", "fastfetch", "sysctl", "id", "ids", "ctx", "echo", "sleep", "true", "false", "touch", "append", "rm", "cp", "mv", "wc", "grep", "tee", "mkdir", "rmdir", "err", "stat", "whoami", "basename", "dirname", "head", "tail", "test", "sort", "uniq", "find", "sh", "duptest", "fds", "lsof", "fdinh", "ln", "readlink", "truncate", "blk", "mount", "df", "du", "lsblk", "pipeinfo", "kill", "killall", "pgrep", "uyield", "ubusy", "slowcat", "burst", "loop", "devio", "tty", "stty", "ttyread", "clear")
+    user_programs = ("hello", "args", "cat", "ls", "uname", "hostname", "free", "uptime", "date", "dmesg", "ps", "pwd", "env", "sysinfo", "fastfetch", "sysctl", "id", "ids", "ctx", "echo", "sleep", "true", "false", "touch", "append", "rm", "cp", "mv", "wc", "grep", "tee", "mkdir", "rmdir", "err", "stat", "whoami", "basename", "dirname", "head", "tail", "test", "sort", "uniq", "find", "hexdump", "sh", "duptest", "fds", "lsof", "fdinh", "ln", "readlink", "truncate", "blk", "mount", "df", "du", "lsblk", "pipeinfo", "kill", "killall", "pgrep", "uyield", "ubusy", "slowcat", "burst", "loop", "devio", "tty", "stty", "ttyread", "clear")
     boot = out_dir / "BOOTX64.EFI"
     kernel = out_dir / "kernel.elf"
     init = out_dir / "init.elf"

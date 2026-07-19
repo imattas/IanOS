@@ -193,6 +193,9 @@ and Mattas identity summary that appears when the normal shell starts.
 `sysctl kernel.osrelease`. `/bin/find.elf` walks syscall-visible VFS nodes below
 a requested root path, including virtual `/proc` trees and disk-backed
 `/mnt/boot` files, and prints typed path rows.
+`/bin/hexdump.elf` opens a VFS path through the process-local descriptor table
+and prints bounded 16-byte hex/ASCII rows, boot-proven against
+`/disk/bootsector.bin` and `/etc/os-release`.
 The shell proof also stats and reads
 `/disk/bootsector.bin`, which is registered from an AHCI READ DMA EXT of LBA0,
 and stats/lists/reads `/mnt/boot/kernel.elf` plus nested files such as
@@ -200,7 +203,7 @@ and stats/lists/reads `/mnt/boot/kernel.elf` plus nested files such as
 on the AHCI-backed disk image. The command set now includes
 filesystem manipulation programs: `touch`, `append`, `rm`, `cp`, `mv`, `ln`, `truncate`, `wc`,
 `grep`, `mkdir`, `rmdir`, `stat`, `whoami`, `hostname`, `id`, `basename`, `dirname`, `head`,
-`tail`, `test`, `sort`, `uniq`, `/bin/find.elf`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
+`tail`, `test`, `sort`, `uniq`, `/bin/find.elf`, `/bin/hexdump.elf`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
 separately to stdout and stderr. Built-in and external `stat` report normalized
 path, type, size, link count, and VFS flags. `/bin/ln.elf` creates hard links
 between writable RAM-backed files; the boot proof links `/tmp/osrel2` to
