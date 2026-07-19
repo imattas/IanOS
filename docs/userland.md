@@ -188,7 +188,9 @@ send SIGTERM/SIGKILL-style termination to a PID, or to a process group through
 SIGTERM/SIGKILL-style termination to live processes matching a full path,
 basename, or basename without `.elf`.
 `/bin/pgrep.elf` uses the same matching rules to print live matching PIDs and
-PGIDs without signaling them. `/bin/fastfetch.elf` reads the system, memory,
+PGIDs without signaling them. `/bin/nproc.elf` reports the scheduler-visible
+online CPU count through the same syscall used by the shell `cpus` built-in.
+`/bin/fastfetch.elf` reads the system, memory,
 framebuffer, CPU, and device inventory syscalls to print the same compact IanOS
 and Mattas identity summary that appears when the normal shell starts.
 `/bin/sysctl.elf` reads the kernel sysctl-style virtual files under
@@ -277,7 +279,7 @@ and stats/lists/reads `/mnt/boot/kernel.elf` plus nested files such as
 on the AHCI-backed disk image. The command set now includes
 filesystem manipulation programs: `touch`, `append`, `rm`, `cp`, `mv`, `ln`, `truncate`, `wc`,
 `grep`, `mkdir`, `rmdir`, `stat`, `whoami`, `hostname`, `id`, `basename`, `dirname`, `head`,
-`tail`, `test`, `sort`, `uniq`, `/bin/find.elf`, `/bin/hexdump.elf`, `/bin/od.elf`, `/bin/base64.elf`, `/bin/which.elf`, `/bin/printenv.elf`, `/bin/cal.elf`, `/bin/readelf.elf`, `/bin/file.elf`, `/bin/sha256sum.elf`, `/bin/sha224sum.elf`, `/bin/sha512sum.elf`, `/bin/sha384sum.elf`, `/bin/sha1sum.elf`, `/bin/md5sum.elf`, `/bin/cksum.elf`, `/bin/fold.elf`, `/bin/printf.elf`, `/bin/dd.elf`, `/bin/xargs.elf`, `/bin/yes.elf`, `/bin/cmp.elf`, `/bin/strings.elf`, `/bin/nl.elf`, `/bin/tr.elf`, `/bin/sed.elf`, `/bin/cut.elf`, `/bin/paste.elf`, `/bin/rev.elf`, `/bin/tac.elf`, `/bin/seq.elf`, `/bin/expr.elf`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/realpath.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
+`tail`, `test`, `sort`, `uniq`, `/bin/find.elf`, `/bin/hexdump.elf`, `/bin/od.elf`, `/bin/base64.elf`, `/bin/which.elf`, `/bin/printenv.elf`, `/bin/cal.elf`, `/bin/readelf.elf`, `/bin/file.elf`, `/bin/sha256sum.elf`, `/bin/sha224sum.elf`, `/bin/sha512sum.elf`, `/bin/sha384sum.elf`, `/bin/sha1sum.elf`, `/bin/md5sum.elf`, `/bin/cksum.elf`, `/bin/fold.elf`, `/bin/printf.elf`, `/bin/dd.elf`, `/bin/xargs.elf`, `/bin/yes.elf`, `/bin/cmp.elf`, `/bin/strings.elf`, `/bin/nl.elf`, `/bin/tr.elf`, `/bin/sed.elf`, `/bin/cut.elf`, `/bin/paste.elf`, `/bin/rev.elf`, `/bin/tac.elf`, `/bin/seq.elf`, `/bin/expr.elf`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/realpath.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/nproc.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
 separately to stdout and stderr. `uniq` supports adjacent duplicate
 suppression plus `-c` count-prefix, `-d` duplicate-only, and `-u`
 unique-only modes over each emitted run. Built-in and external `stat` report normalized
