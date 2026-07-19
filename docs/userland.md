@@ -146,7 +146,9 @@ can read boot-disk cache statistics and LBA0 through the block-device syscalls.
 It also runs `/bin/mount.elf`, which reads the kernel mount table and prints
 the boot-module VFS root plus the read-only FAT16 `/mnt/boot` disk mount.
 `/bin/df.elf` consumes the same mount records to report per-mount node counts
-and byte totals from userspace.
+and byte totals from userspace. `/bin/lsblk.elf` combines the boot block-device
+stats with the mount table to show the initialized boot disk, sector geometry,
+cache/read counters, and the disk-backed `/mnt/boot` mountpoint.
 `/bin/du.elf` walks syscall-visible VFS node records under a normalized path and
 splits subtree usage into disk-backed and memory-backed bytes.
 `/bin/pipeinfo.elf` reads the kernel pipe table and reports live pipe capacity,
@@ -193,7 +195,7 @@ and stats/lists/reads `/mnt/boot/kernel.elf` plus nested files such as
 on the AHCI-backed disk image. The command set now includes
 filesystem manipulation programs: `touch`, `append`, `rm`, `cp`, `mv`, `ln`, `truncate`, `wc`,
 `grep`, `mkdir`, `rmdir`, `stat`, `whoami`, `hostname`, `id`, `basename`, `dirname`, `head`,
-`tail`, `test`, `sort`, `uniq`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
+`tail`, `test`, `sort`, `uniq`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/lsblk.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
 separately to stdout and stderr. Built-in and external `stat` report normalized
 path, type, size, link count, and VFS flags. `/bin/ln.elf` creates hard links
 between writable RAM-backed files; the boot proof links `/tmp/osrel2` to
