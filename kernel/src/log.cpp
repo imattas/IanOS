@@ -164,7 +164,7 @@ uint64_t kernel_log_size() {
 }
 
 uint64_t copy_kernel_log(char* out, uint64_t capacity, uint64_t offset) {
-    if (!out || capacity == 0 || capacity > 4096) return 0;
+    if (!out || capacity == 0 || capacity > kKernelLogCapacity) return 0;
     uint64_t flags = hk::sync::irq_save();
     uint64_t to_copy = 0;
     {

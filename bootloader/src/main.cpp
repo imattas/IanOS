@@ -34,6 +34,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\date.elf", "/bin/date.elf"},
     {L"\\bin\\cal.elf", "/bin/cal.elf"},
     {L"\\bin\\dmesg.elf", "/bin/dmesg.elf"},
+    {L"\\bin\\kmsg.elf", "/bin/kmsg.elf"},
     {L"\\bin\\ps.elf", "/bin/ps.elf"},
     {L"\\bin\\pwd.elf", "/bin/pwd.elf"},
     {L"\\bin\\env.elf", "/bin/env.elf"},

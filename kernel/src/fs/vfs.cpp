@@ -1241,6 +1241,12 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         }
         break;
     }
+    case VirtualFileKind::ProcKmsg: {
+        uint64_t copied = hk::copy_kernel_log(out, capacity, 0);
+        cursor = copied;
+        if (cursor < capacity) out[cursor] = 0;
+        break;
+    }
     case VirtualFileKind::ProcModules: {
         append_text(out, capacity, cursor, "NAME SIZE ADDRESS PATH\n");
         if (boot_module_table) {
@@ -1646,6 +1652,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/cpu/summary", VirtualFileKind::ProcCpuSummary);
     register_virtual_file("/proc/cpu/topology", VirtualFileKind::ProcCpuTopology);
     register_virtual_file("/proc/mm/summary", VirtualFileKind::ProcMmSummary);
+    register_virtual_file("/proc/kmsg", VirtualFileKind::ProcKmsg);
     register_virtual_file("/proc/net/summary", VirtualFileKind::ProcNetSummary);
     register_virtual_file("/proc/net/dev", VirtualFileKind::ProcNetDev);
     register_virtual_file("/proc/cmdline", VirtualFileKind::ProcCmdline);
@@ -2423,6 +2430,7 @@ bool self_test() {
     const Node* proc_cpu_topology = vfs().find("/proc/cpu/topology");
     const Node* proc_mm = vfs().find("/proc/mm");
     const Node* proc_mm_summary = vfs().find("/proc/mm/summary");
+    const Node* proc_kmsg = vfs().find("/proc/kmsg");
     const Node* proc_net = vfs().find("/proc/net");
     const Node* proc_net_summary = vfs().find("/proc/net/summary");
     const Node* proc_net_dev = vfs().find("/proc/net/dev");
@@ -2476,6 +2484,7 @@ bool self_test() {
         !proc_cpu_summary || proc_cpu_summary->type != NodeType::VirtualFile || proc_cpu_summary->virtual_kind != VirtualFileKind::ProcCpuSummary ||
         !proc_cpu_topology || proc_cpu_topology->type != NodeType::VirtualFile || proc_cpu_topology->virtual_kind != VirtualFileKind::ProcCpuTopology ||
         !proc_mm_summary || proc_mm_summary->type != NodeType::VirtualFile || proc_mm_summary->virtual_kind != VirtualFileKind::ProcMmSummary ||
+        !proc_kmsg || proc_kmsg->type != NodeType::VirtualFile || proc_kmsg->virtual_kind != VirtualFileKind::ProcKmsg ||
         !proc_net_summary || proc_net_summary->type != NodeType::VirtualFile || proc_net_summary->virtual_kind != VirtualFileKind::ProcNetSummary ||
         !proc_net_dev || proc_net_dev->type != NodeType::VirtualFile || proc_net_dev->virtual_kind != VirtualFileKind::ProcNetDev ||
         !proc_cmdline || proc_cmdline->type != NodeType::VirtualFile || proc_cmdline->virtual_kind != VirtualFileKind::ProcCmdline ||
@@ -2522,6 +2531,7 @@ bool self_test() {
         proc_buffer[0] != 'C' || proc_buffer[6] != 'I') return false;
     if (vfs().read("/proc/mm/summary", 0, proc_buffer, 9) != 9 ||
         proc_buffer[0] != 'p' || proc_buffer[4] != 't') return false;
+    if (vfs().read("/proc/kmsg", 0, proc_buffer, 7) != 7) return false;
     if (vfs().read("/proc/net/summary", 0, proc_buffer, 10) != 10 ||
         proc_buffer[0] != 'i' || proc_buffer[9] != 's') return false;
     if (vfs().read("/proc/net/dev", 0, proc_buffer, 6) != 6 ||
@@ -2591,6 +2601,8 @@ bool self_test() {
     if (!date_cmd || date_cmd->type != NodeType::MemoryFile || date_cmd->size < 4) return false;
     const Node* dmesg = vfs().find("/bin/dmesg.elf");
     if (!dmesg || dmesg->type != NodeType::MemoryFile || dmesg->size < 4) return false;
+    const Node* kmsg = vfs().find("/bin/kmsg.elf");
+    if (!kmsg || kmsg->type != NodeType::MemoryFile || kmsg->size < 4) return false;
     const Node* ps = vfs().find("/bin/ps.elf");
     if (!ps || ps->type != NodeType::MemoryFile || ps->size < 4) return false;
     const Node* pwd = vfs().find("/bin/pwd.elf");

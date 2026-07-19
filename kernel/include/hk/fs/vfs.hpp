@@ -30,6 +30,7 @@ enum class VirtualFileKind : uint8_t {
     ProcCpuSummary,
     ProcCpuTopology,
     ProcMmSummary,
+    ProcKmsg,
     ProcNetSummary,
     ProcNetDev,
     ProcModules,
