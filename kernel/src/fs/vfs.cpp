@@ -47,7 +47,7 @@ constexpr char kProcCpuInfo[] =
     "model name\t: x86_64 virtual CPU\n"
     "arch\t\t: x86_64\n";
 
-constexpr uint32_t kMaxMountedFatNodes = 96;
+constexpr uint32_t kMaxMountedFatNodes = 160;
 char mounted_fat_paths[kMaxMountedFatNodes][64]{};
 uint32_t mounted_fat_path_count = 0;
 
