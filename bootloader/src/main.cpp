@@ -119,6 +119,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\lsblk.elf", "/bin/lsblk.elf"},
     {L"\\bin\\findmnt.elf", "/bin/findmnt.elf"},
     {L"\\bin\\iostat.elf", "/bin/iostat.elf"},
+    {L"\\bin\\lsmem.elf", "/bin/lsmem.elf"},
     {L"\\bin\\pipeinfo.elf", "/bin/pipeinfo.elf"},
     {L"\\bin\\kill.elf", "/bin/kill.elf"},
     {L"\\bin\\killall.elf", "/bin/killall.elf"},
