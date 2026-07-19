@@ -47,7 +47,7 @@ kernel and user binaries share the same contract. The current user program uses
 - live pipe-table snapshots through `GetPipeCount` and `GetPipeInfo(index, out)`
 - kernel-backed `/dev/null`, `/dev/zero`, `/dev/tty`, and `/dev/console` character-device reads/writes through normal file descriptors
 - default fd 0, fd 1, and fd 2 descriptors backed by `/dev/tty` for newly created processes, with normal redirection and inheritance able to replace them
-- generated `/proc/meminfo`, `/proc/uptime`, `/proc/loadavg`, `/proc/stat`, `/proc/block/bootdisk`, `/proc/driver/summary`, `/proc/driver/devices`, `/proc/pci/summary`, `/proc/pci/devices`, `/proc/irq/summary`, `/proc/interrupts`, `/proc/tty/summary`, `/proc/cpu/summary`, `/proc/cpu/topology`, `/proc/processes`, `/proc/mounts`, `/proc/filesystems`, `/proc/fs/vfs`, `/proc/cmdline`, `/proc/self/status`, `/proc/self/fd`, `/proc/<pid>/status`, and `/proc/<pid>/fd` virtual-file reads through normal file descriptors
+- generated `/proc/meminfo`, `/proc/uptime`, `/proc/loadavg`, `/proc/sched_debug`, `/proc/stat`, `/proc/block/bootdisk`, `/proc/driver/summary`, `/proc/driver/devices`, `/proc/pci/summary`, `/proc/pci/devices`, `/proc/irq/summary`, `/proc/interrupts`, `/proc/tty/summary`, `/proc/cpu/summary`, `/proc/cpu/topology`, `/proc/processes`, `/proc/mounts`, `/proc/filesystems`, `/proc/fs/vfs`, `/proc/cmdline`, `/proc/self/status`, `/proc/self/fd`, `/proc/<pid>/status`, and `/proc/<pid>/fd` virtual-file reads through normal file descriptors
 - `/proc/self/fd/N` and `/proc/<pid>/fd/N` link resolution through `ReadLink(path, out, capacity)`
 - RAM VFS create/write/delete file operations
 - RAM VFS create/delete directory operations with parent-directory validation and non-empty directory refusal
@@ -165,7 +165,7 @@ raw and canonical mode through the terminal-control syscall.
 line into the terminal input discipline, reads it back through fd 0 backed by
 `/dev/tty`, and restores raw mode for the interactive shell.
 The boot proof also stats, lists, and reads generated `/proc/meminfo`,
-`/proc/uptime`, `/proc/loadavg`, `/proc/block/bootdisk`, `/proc/driver/summary`, `/proc/driver/devices`, `/proc/pci/summary`, `/proc/pci/devices`, `/proc/irq/summary`, `/proc/interrupts`, `/proc/tty/summary`, `/proc/cpu/summary`, `/proc/cpu/topology`, `/proc/processes`, `/proc/mounts`, `/proc/filesystems`,
+`/proc/uptime`, `/proc/loadavg`, `/proc/sched_debug`, `/proc/block/bootdisk`, `/proc/driver/summary`, `/proc/driver/devices`, `/proc/pci/summary`, `/proc/pci/devices`, `/proc/irq/summary`, `/proc/interrupts`, `/proc/tty/summary`, `/proc/cpu/summary`, `/proc/cpu/topology`, `/proc/processes`, `/proc/mounts`, `/proc/filesystems`,
 `/proc/fs/vfs`, `/proc/cmdline`, `/proc/stat`, `/proc/sys/kernel/hostname`, `/proc/sys/kernel/ostype`,
 `/proc/sys/kernel/osrelease`, `/proc/sys/kernel/version`, `/proc/self/status`,
 `/proc/self/fd`, `/proc/1/status`, and `/proc/1/fd` through the same VFS and
@@ -199,7 +199,9 @@ APIC IDs, ACPI processor IDs, readiness flags, online count, parked APs,
 scheduler-ready CPUs, and Local APIC timer readiness.
 `/bin/schedstat.elf` reads the kernel scheduler statistics syscall and reports
 thread-state counts, switch/yield/preempt totals, current scheduler thread, and
-current CPU metadata.
+current CPU metadata. `/bin/scheddebug.elf` streams `/proc/sched_debug`
+through ordinary VFS open/read syscalls and reports scheduler totals together
+with userspace block/wake/preemption counters.
 `/bin/vmstat.elf` combines memory, tick, and scheduler statistics into one
 syscall-backed virtual-memory and scheduler activity snapshot.
 `/bin/top.elf` takes a deterministic top-style snapshot of process, thread,
@@ -335,7 +337,7 @@ and stats/lists/reads `/mnt/boot/kernel.elf` plus nested files such as
 on the AHCI-backed disk image. The command set now includes
 filesystem manipulation programs: `touch`, `append`, `rm`, `cp`, `mv`, `ln`, `truncate`, `wc`,
 `grep`, `mkdir`, `rmdir`, `stat`, `statfs`, `whoami`, `hostname`, `id`, `basename`, `dirname`, `head`,
-`tail`, `test`, `sort`, `uniq`, `/bin/find.elf`, `/bin/hexdump.elf`, `/bin/od.elf`, `/bin/base64.elf`, `/bin/which.elf`, `/bin/printenv.elf`, `/bin/cal.elf`, `/bin/readelf.elf`, `/bin/file.elf`, `/bin/lsattr.elf`, `/bin/namei.elf`, `/bin/tree.elf`, `/bin/statfs.elf`, `/bin/sha256sum.elf`, `/bin/sha224sum.elf`, `/bin/sha512sum.elf`, `/bin/sha384sum.elf`, `/bin/sha1sum.elf`, `/bin/md5sum.elf`, `/bin/cksum.elf`, `/bin/fold.elf`, `/bin/printf.elf`, `/bin/dd.elf`, `/bin/xargs.elf`, `/bin/yes.elf`, `/bin/cmp.elf`, `/bin/strings.elf`, `/bin/nl.elf`, `/bin/tr.elf`, `/bin/sed.elf`, `/bin/cut.elf`, `/bin/paste.elf`, `/bin/rev.elf`, `/bin/tac.elf`, `/bin/seq.elf`, `/bin/expr.elf`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/realpath.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/findmnt.elf`, `/bin/iostat.elf`, `/bin/lsmem.elf`, `/bin/fbset.elf`, `/bin/lspci.elf`, `/bin/irqstat.elf`, `/bin/mmstat.elf`, `/bin/netstat.elf`, `/bin/lsmod.elf`, `/bin/kmsg.elf`, `/bin/loadavg.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/pidof.elf`, `/bin/nproc.elf`, `/bin/lscpu.elf`, `/bin/schedstat.elf`, `/bin/vmstat.elf`, `/bin/top.elf`, `/bin/pstree.elf`, `/bin/groups.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
+`tail`, `test`, `sort`, `uniq`, `/bin/find.elf`, `/bin/hexdump.elf`, `/bin/od.elf`, `/bin/base64.elf`, `/bin/which.elf`, `/bin/printenv.elf`, `/bin/cal.elf`, `/bin/readelf.elf`, `/bin/file.elf`, `/bin/lsattr.elf`, `/bin/namei.elf`, `/bin/tree.elf`, `/bin/statfs.elf`, `/bin/sha256sum.elf`, `/bin/sha224sum.elf`, `/bin/sha512sum.elf`, `/bin/sha384sum.elf`, `/bin/sha1sum.elf`, `/bin/md5sum.elf`, `/bin/cksum.elf`, `/bin/fold.elf`, `/bin/printf.elf`, `/bin/dd.elf`, `/bin/xargs.elf`, `/bin/yes.elf`, `/bin/cmp.elf`, `/bin/strings.elf`, `/bin/nl.elf`, `/bin/tr.elf`, `/bin/sed.elf`, `/bin/cut.elf`, `/bin/paste.elf`, `/bin/rev.elf`, `/bin/tac.elf`, `/bin/seq.elf`, `/bin/expr.elf`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/realpath.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/findmnt.elf`, `/bin/iostat.elf`, `/bin/lsmem.elf`, `/bin/fbset.elf`, `/bin/lspci.elf`, `/bin/irqstat.elf`, `/bin/mmstat.elf`, `/bin/netstat.elf`, `/bin/lsmod.elf`, `/bin/kmsg.elf`, `/bin/loadavg.elf`, `/bin/scheddebug.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/pidof.elf`, `/bin/nproc.elf`, `/bin/lscpu.elf`, `/bin/schedstat.elf`, `/bin/vmstat.elf`, `/bin/top.elf`, `/bin/pstree.elf`, `/bin/groups.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
 separately to stdout and stderr. `uniq` supports adjacent duplicate
 suppression plus `-c` count-prefix, `-d` duplicate-only, and `-u`
 unique-only modes over each emitted run. Built-in and external `stat` report normalized
@@ -426,7 +428,9 @@ because the prompt does not block in `Wait`.
 exposes the same hostname through procfs. `/proc/sys/kernel/ostype`,
 `/proc/sys/kernel/osrelease`, and `/proc/sys/kernel/version` expose kernel
 identity in the same sysctl-style tree. `/proc/loadavg` exposes an
-instantaneous runnable/live process load snapshot. `/proc/stat` exposes scheduler and
+instantaneous runnable/live process load snapshot. `/proc/sched_debug` exposes
+kernel scheduler totals and userspace blocking/preemption diagnostics.
+`/proc/stat` exposes scheduler and
 process counters in a Linux-like text layout, `/proc/block/bootdisk` exposes
 boot-disk cache counters, `/proc/driver/summary` exposes driver-manager
 lifecycle counters, `/proc/driver/devices` exposes bound driver-device rows,

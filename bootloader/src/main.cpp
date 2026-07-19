@@ -36,6 +36,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\dmesg.elf", "/bin/dmesg.elf"},
     {L"\\bin\\kmsg.elf", "/bin/kmsg.elf"},
     {L"\\bin\\loadavg.elf", "/bin/loadavg.elf"},
+    {L"\\bin\\scheddebug.elf", "/bin/scheddebug.elf"},
     {L"\\bin\\ps.elf", "/bin/ps.elf"},
     {L"\\bin\\pwd.elf", "/bin/pwd.elf"},
     {L"\\bin\\env.elf", "/bin/env.elf"},

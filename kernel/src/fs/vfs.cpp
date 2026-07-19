@@ -623,6 +623,52 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_char(out, capacity, cursor, '\n');
         break;
     }
+    case VirtualFileKind::ProcSchedDebug: {
+        auto& scheduler = hk::sched::scheduler();
+        auto& manager = hk::userspace::userspace_manager();
+        const auto diagnostics = manager.diagnostics();
+        append_text(out, capacity, cursor, "Mattas scheduler debug\n");
+        append_text(out, capacity, cursor, "threads ");
+        append_decimal(out, capacity, cursor, scheduler.thread_count());
+        append_text(out, capacity, cursor, "\nready ");
+        append_decimal(out, capacity, cursor, scheduler.ready_count());
+        append_text(out, capacity, cursor, "\nsleeping ");
+        append_decimal(out, capacity, cursor, scheduler.sleeping_count());
+        append_text(out, capacity, cursor, "\ndead ");
+        append_decimal(out, capacity, cursor, scheduler.dead_count());
+        append_text(out, capacity, cursor, "\nswitches ");
+        append_decimal(out, capacity, cursor, scheduler.switch_count());
+        append_text(out, capacity, cursor, "\nyields ");
+        append_decimal(out, capacity, cursor, scheduler.yield_count());
+        append_text(out, capacity, cursor, "\npreempts ");
+        append_decimal(out, capacity, cursor, scheduler.preempt_count());
+        append_text(out, capacity, cursor, "\ncurrent_thread ");
+        append_decimal(out, capacity, cursor, scheduler.current_thread() ? scheduler.current_thread()->id : 0);
+        append_text(out, capacity, cursor, "\ncurrent_cpu ");
+        append_decimal(out, capacity, cursor, hk::cpu::runtime().current_cpu_id());
+        append_text(out, capacity, cursor, "\nonline_cpus ");
+        append_decimal(out, capacity, cursor, hk::cpu::topology().online_count());
+        append_text(out, capacity, cursor, "\nuser_processes ");
+        append_decimal(out, capacity, cursor, manager.process_count());
+        append_text(out, capacity, cursor, "\nuser_live_processes ");
+        append_decimal(out, capacity, cursor, manager.live_process_count());
+        append_text(out, capacity, cursor, "\nuser_runnable_threads ");
+        append_decimal(out, capacity, cursor, manager.runnable_thread_count());
+        append_text(out, capacity, cursor, "\nuser_pipe_read_blocks ");
+        append_decimal(out, capacity, cursor, diagnostics.pipe_read_blocks);
+        append_text(out, capacity, cursor, "\nuser_pipe_write_blocks ");
+        append_decimal(out, capacity, cursor, diagnostics.pipe_write_blocks);
+        append_text(out, capacity, cursor, "\nuser_wait_blocks ");
+        append_decimal(out, capacity, cursor, diagnostics.process_wait_blocks);
+        append_text(out, capacity, cursor, "\nuser_wait_any_blocks ");
+        append_decimal(out, capacity, cursor, diagnostics.process_wait_any_blocks);
+        append_text(out, capacity, cursor, "\nuser_sleep_blocks ");
+        append_decimal(out, capacity, cursor, diagnostics.sleep_blocks);
+        append_text(out, capacity, cursor, "\nuser_preempt_switches ");
+        append_decimal(out, capacity, cursor, diagnostics.preempt_switches);
+        append_char(out, capacity, cursor, '\n');
+        break;
+    }
     case VirtualFileKind::ProcStat: {
         auto& scheduler = hk::sched::scheduler();
         auto& manager = hk::userspace::userspace_manager();
@@ -1655,6 +1701,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/meminfo", VirtualFileKind::ProcMeminfo);
     register_virtual_file("/proc/uptime", VirtualFileKind::ProcUptime);
     register_virtual_file("/proc/loadavg", VirtualFileKind::ProcLoadavg);
+    register_virtual_file("/proc/sched_debug", VirtualFileKind::ProcSchedDebug);
     register_virtual_file("/proc/stat", VirtualFileKind::ProcStat);
     register_virtual_file("/proc/processes", VirtualFileKind::ProcProcesses);
     register_virtual_file("/proc/modules", VirtualFileKind::ProcModules);
@@ -2458,6 +2505,7 @@ bool self_test() {
     const Node* proc_meminfo = vfs().find("/proc/meminfo");
     const Node* proc_uptime = vfs().find("/proc/uptime");
     const Node* proc_loadavg = vfs().find("/proc/loadavg");
+    const Node* proc_sched_debug = vfs().find("/proc/sched_debug");
     const Node* proc_stat = vfs().find("/proc/stat");
     const Node* proc_processes = vfs().find("/proc/processes");
     const Node* proc_modules = vfs().find("/proc/modules");
@@ -2489,6 +2537,7 @@ bool self_test() {
     if (!proc_meminfo || proc_meminfo->type != NodeType::VirtualFile || proc_meminfo->virtual_kind != VirtualFileKind::ProcMeminfo ||
         !proc_uptime || proc_uptime->type != NodeType::VirtualFile || proc_uptime->virtual_kind != VirtualFileKind::ProcUptime ||
         !proc_loadavg || proc_loadavg->type != NodeType::VirtualFile || proc_loadavg->virtual_kind != VirtualFileKind::ProcLoadavg ||
+        !proc_sched_debug || proc_sched_debug->type != NodeType::VirtualFile || proc_sched_debug->virtual_kind != VirtualFileKind::ProcSchedDebug ||
         !proc_stat || proc_stat->type != NodeType::VirtualFile || proc_stat->virtual_kind != VirtualFileKind::ProcStat ||
         !proc_processes || proc_processes->type != NodeType::VirtualFile || proc_processes->virtual_kind != VirtualFileKind::ProcProcesses ||
         !proc_modules || proc_modules->type != NodeType::VirtualFile || proc_modules->virtual_kind != VirtualFileKind::ProcModules ||
@@ -2526,6 +2575,7 @@ bool self_test() {
     if (vfs().read_handle(proc_handle, uptime_buffer, 6) != 6 || uptime_buffer[0] != 't' || uptime_buffer[5] != ' ') return false;
     if (!vfs().close(proc_handle)) return false;
     if (vfs().read("/proc/loadavg", 0, proc_buffer, 4) != 4 || proc_buffer[1] != '.' || proc_buffer[2] != '0') return false;
+    if (vfs().read("/proc/sched_debug", 0, proc_buffer, 8) != 8 || proc_buffer[0] != 'M' || proc_buffer[7] != 's') return false;
     if (vfs().read("/proc/processes", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'P' || proc_buffer[4] != 'P') return false;
     if (vfs().read("/proc/modules", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'N' || proc_buffer[5] != 'S') return false;
     if (vfs().read("/proc/stat", 0, proc_buffer, 4) != 4 || proc_buffer[0] != 'c' || proc_buffer[3] != ' ') return false;
