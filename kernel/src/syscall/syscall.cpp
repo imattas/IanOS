@@ -1,4 +1,5 @@
 #include "hk/syscall/syscall.hpp"
+#include "hybrid/version.hpp"
 #include "hk/log.hpp"
 #include "hk/sched/scheduler.hpp"
 #include "hk/timer/pit.hpp"
@@ -703,13 +704,13 @@ Result dispatch(uint64_t number, uint64_t arg0, uint64_t arg1, uint64_t arg2, ui
         out->kernel_end = boot.kernel_physical_end;
         out->kernel_entry = boot.kernel_entry;
         out->rsdp = boot.rsdp;
-        copy_text(out->sysname, sizeof(out->sysname), "IanOS");
-        copy_text(out->release, sizeof(out->release), "0.1.00-x86_64");
-        copy_text(out->machine, sizeof(out->machine), "x86_64");
+        copy_text(out->sysname, sizeof(out->sysname), hybrid::version::kOsName);
+        copy_text(out->release, sizeof(out->release), hybrid::version::kOsRelease);
+        copy_text(out->machine, sizeof(out->machine), hybrid::version::kMachine);
         if ((boot.flags & hybrid::kBootFlagDebug) != 0) copy_text(out->boot_mode, sizeof(out->boot_mode), "uefi-debug");
         else if ((boot.flags & hybrid::kBootFlagRecovery) != 0) copy_text(out->boot_mode, sizeof(out->boot_mode), "uefi-recovery");
         else copy_text(out->boot_mode, sizeof(out->boot_mode), "uefi");
-        copy_text(out->kernel_type, sizeof(out->kernel_type), "Mattas 0.1.00-stable");
+        copy_text(out->kernel_type, sizeof(out->kernel_type), hybrid::version::kKernelDisplay);
         return {1, kErrorNone};
     }
     case Number::ReadKernelLog: {

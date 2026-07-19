@@ -19,26 +19,27 @@
 #include "hk/terminal.hpp"
 #include "hk/timer/pit.hpp"
 #include "hk/userspace/userspace.hpp"
+#include "hybrid/version.hpp"
 
 namespace hk::fs {
 namespace {
 constexpr char kEtcOsRelease[] =
-    "NAME=IanOS\n"
-    "VERSION=0.1.00\n"
-    "ID=ianos\n"
-    "PRETTY_NAME=\"IanOS 0.1.00\"\n";
+    "NAME=" HYBRID_OS_NAME "\n"
+    "VERSION=" HYBRID_OS_VERSION "\n"
+    "ID=" HYBRID_OS_ID "\n"
+    "PRETTY_NAME=\"" HYBRID_OS_NAME " " HYBRID_OS_VERSION "\"\n";
 
 constexpr char kEtcHostname[] =
-    "ianos\n";
+    HYBRID_OS_ID "\n";
 
 constexpr char kProcVersion[] =
-    "Mattas 0.1.00-stable x86_64 uefi hybrid\n";
+    HYBRID_PROC_VERSION "\n";
 
 constexpr char kProcKernelOstype[] =
-    "IanOS\n";
+    HYBRID_OS_NAME "\n";
 
 constexpr char kProcKernelOsrelease[] =
-    "0.1.00-x86_64\n";
+    HYBRID_OS_RELEASE "\n";
 
 constexpr char kProcCpuInfo[] =
     "processor\t: 0\n"
