@@ -123,6 +123,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\pgrep.elf", "/bin/pgrep.elf"},
     {L"\\bin\\pidof.elf", "/bin/pidof.elf"},
     {L"\\bin\\nproc.elf", "/bin/nproc.elf"},
+    {L"\\bin\\lscpu.elf", "/bin/lscpu.elf"},
     {L"\\bin\\uyield.elf", "/bin/uyield.elf"},
     {L"\\bin\\ubusy.elf", "/bin/ubusy.elf"},
     {L"\\bin\\slowcat.elf", "/bin/slowcat.elf"},
