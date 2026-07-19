@@ -218,6 +218,8 @@ text, empty files, and binary data.
 `/bin/sha256sum.elf` implements SHA-256 in freestanding userspace and hashes
 path-backed or stdin-backed descriptor streams, with boot verification against
 stable identity files.
+`/bin/md5sum.elf` implements MD5 in freestanding userspace and hashes the same
+path-backed or stdin-backed descriptor streams for compatibility diagnostics.
 `/bin/cat.elf` accepts stdin or one or more path arguments, opening each path in
 order through process-local descriptors and streaming text files to stdout.
 `/bin/wc.elf` also accepts stdin or one or more path arguments, prints per-path
@@ -267,7 +269,7 @@ and stats/lists/reads `/mnt/boot/kernel.elf` plus nested files such as
 on the AHCI-backed disk image. The command set now includes
 filesystem manipulation programs: `touch`, `append`, `rm`, `cp`, `mv`, `ln`, `truncate`, `wc`,
 `grep`, `mkdir`, `rmdir`, `stat`, `whoami`, `hostname`, `id`, `basename`, `dirname`, `head`,
-`tail`, `test`, `sort`, `uniq`, `/bin/find.elf`, `/bin/hexdump.elf`, `/bin/od.elf`, `/bin/base64.elf`, `/bin/which.elf`, `/bin/printenv.elf`, `/bin/cal.elf`, `/bin/readelf.elf`, `/bin/file.elf`, `/bin/sha256sum.elf`, `/bin/cksum.elf`, `/bin/fold.elf`, `/bin/printf.elf`, `/bin/dd.elf`, `/bin/xargs.elf`, `/bin/yes.elf`, `/bin/cmp.elf`, `/bin/strings.elf`, `/bin/nl.elf`, `/bin/tr.elf`, `/bin/sed.elf`, `/bin/cut.elf`, `/bin/paste.elf`, `/bin/rev.elf`, `/bin/tac.elf`, `/bin/seq.elf`, `/bin/expr.elf`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/realpath.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
+`tail`, `test`, `sort`, `uniq`, `/bin/find.elf`, `/bin/hexdump.elf`, `/bin/od.elf`, `/bin/base64.elf`, `/bin/which.elf`, `/bin/printenv.elf`, `/bin/cal.elf`, `/bin/readelf.elf`, `/bin/file.elf`, `/bin/sha256sum.elf`, `/bin/md5sum.elf`, `/bin/cksum.elf`, `/bin/fold.elf`, `/bin/printf.elf`, `/bin/dd.elf`, `/bin/xargs.elf`, `/bin/yes.elf`, `/bin/cmp.elf`, `/bin/strings.elf`, `/bin/nl.elf`, `/bin/tr.elf`, `/bin/sed.elf`, `/bin/cut.elf`, `/bin/paste.elf`, `/bin/rev.elf`, `/bin/tac.elf`, `/bin/seq.elf`, `/bin/expr.elf`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/realpath.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
 separately to stdout and stderr. `uniq` supports adjacent duplicate
 suppression plus `-c` count-prefix, `-d` duplicate-only, and `-u`
 unique-only modes over each emitted run. Built-in and external `stat` report normalized
