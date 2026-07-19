@@ -16,6 +16,16 @@ struct HeapStats {
     uint64_t largest_free_block;
 };
 
+struct HeapDiagnostics {
+    uint64_t allocation_calls;
+    uint64_t calloc_calls;
+    uint64_t free_calls;
+    uint64_t failed_allocations;
+    uint64_t invalid_frees;
+    uint64_t peak_used_bytes;
+    uint64_t last_alloc_size;
+};
+
 class KernelHeap {
 public:
     void initialize();
@@ -25,6 +35,7 @@ public:
     uint64_t heap_start() const { return heap_start_; }
     uint64_t heap_end() const { return heap_end_; }
     HeapStats stats() const;
+    HeapDiagnostics diagnostics() const;
 private:
     struct Block {
         size_t size;
@@ -34,7 +45,10 @@ private:
     uint64_t heap_start_ = 0xffff800000000000ull;
     uint64_t heap_end_ = 0xffff800000000000ull;
     Block* first_ = nullptr;
+    HeapDiagnostics diagnostics_{};
     bool expand(size_t bytes);
+    uint64_t used_bytes_locked() const;
+    void update_peak_used_locked();
 };
 
 KernelHeap& heap();

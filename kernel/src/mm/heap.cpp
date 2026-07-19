@@ -54,6 +54,7 @@ void* KernelHeap::allocate(size_t size, size_t alignment) {
     if (size == 0) return nullptr;
     if (alignment < 16) alignment = 16;
     hk::sync::LockGuard guard(heap_lock);
+    ++diagnostics_.allocation_calls;
     for (;;) {
         for (Block* block = first_; block; block = block->next) {
             uintptr_t payload = reinterpret_cast<uintptr_t>(block) + sizeof(Block);
@@ -71,14 +72,23 @@ void* KernelHeap::allocate(size_t size, size_t alignment) {
                     block->size = used_end - payload;
                 }
                 block->free = false;
+                diagnostics_.last_alloc_size = size;
+                update_peak_used_locked();
                 return reinterpret_cast<void*>(aligned);
             }
         }
-        if (!expand(size + alignment + sizeof(Block))) return nullptr;
+        if (!expand(size + alignment + sizeof(Block))) {
+            ++diagnostics_.failed_allocations;
+            return nullptr;
+        }
     }
 }
 
 void* KernelHeap::calloc(size_t count, size_t size) {
+    {
+        hk::sync::LockGuard guard(heap_lock);
+        ++diagnostics_.calloc_calls;
+    }
     size_t total = count * size;
     void* ptr = allocate(total);
     if (ptr) memset(ptr, 0, total);
@@ -94,6 +104,7 @@ void KernelHeap::free(void* ptr) {
         uintptr_t end = begin + block->size;
         if (raw >= begin && raw < end) {
             block->free = true;
+            ++diagnostics_.free_calls;
             while (block->next && block->next->free) {
                 uintptr_t block_end = reinterpret_cast<uintptr_t>(block) + sizeof(Block) + block->size;
                 if (block_end != reinterpret_cast<uintptr_t>(block->next)) break;
@@ -113,6 +124,7 @@ void KernelHeap::free(void* ptr) {
             return;
         }
     }
+    ++diagnostics_.invalid_frees;
 }
 
 HeapStats KernelHeap::stats() const {
@@ -133,6 +145,24 @@ HeapStats KernelHeap::stats() const {
         }
     }
     return out;
+}
+
+HeapDiagnostics KernelHeap::diagnostics() const {
+    hk::sync::LockGuard guard(heap_lock);
+    return diagnostics_;
+}
+
+uint64_t KernelHeap::used_bytes_locked() const {
+    uint64_t used = 0;
+    for (Block* block = first_; block; block = block->next) {
+        if (!block->free) used += block->size;
+    }
+    return used;
+}
+
+void KernelHeap::update_peak_used_locked() {
+    uint64_t used = used_bytes_locked();
+    if (used > diagnostics_.peak_used_bytes) diagnostics_.peak_used_bytes = used;
 }
 
 void* kmalloc(size_t size) { return heap().allocate(size); }

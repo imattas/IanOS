@@ -1235,6 +1235,44 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_char(out, capacity, cursor, '\n');
         break;
     }
+    case VirtualFileKind::ProcHeapinfo: {
+        const auto heap = hk::mm::heap().stats();
+        const auto diag = hk::mm::heap().diagnostics();
+        append_text(out, capacity, cursor, "heap_start ");
+        append_decimal(out, capacity, cursor, heap.heap_start);
+        append_text(out, capacity, cursor, "\nheap_end ");
+        append_decimal(out, capacity, cursor, heap.heap_end);
+        append_text(out, capacity, cursor, "\nheap_bytes ");
+        append_decimal(out, capacity, cursor, heap.heap_bytes);
+        append_text(out, capacity, cursor, "\nblock_count ");
+        append_decimal(out, capacity, cursor, heap.block_count);
+        append_text(out, capacity, cursor, "\nused_blocks ");
+        append_decimal(out, capacity, cursor, heap.used_blocks);
+        append_text(out, capacity, cursor, "\nfree_blocks ");
+        append_decimal(out, capacity, cursor, heap.free_blocks);
+        append_text(out, capacity, cursor, "\nused_bytes ");
+        append_decimal(out, capacity, cursor, heap.used_bytes);
+        append_text(out, capacity, cursor, "\nfree_bytes ");
+        append_decimal(out, capacity, cursor, heap.free_bytes);
+        append_text(out, capacity, cursor, "\nlargest_free_block ");
+        append_decimal(out, capacity, cursor, heap.largest_free_block);
+        append_text(out, capacity, cursor, "\nallocation_calls ");
+        append_decimal(out, capacity, cursor, diag.allocation_calls);
+        append_text(out, capacity, cursor, "\ncalloc_calls ");
+        append_decimal(out, capacity, cursor, diag.calloc_calls);
+        append_text(out, capacity, cursor, "\nfree_calls ");
+        append_decimal(out, capacity, cursor, diag.free_calls);
+        append_text(out, capacity, cursor, "\nfailed_allocations ");
+        append_decimal(out, capacity, cursor, diag.failed_allocations);
+        append_text(out, capacity, cursor, "\ninvalid_frees ");
+        append_decimal(out, capacity, cursor, diag.invalid_frees);
+        append_text(out, capacity, cursor, "\npeak_used_bytes ");
+        append_decimal(out, capacity, cursor, diag.peak_used_bytes);
+        append_text(out, capacity, cursor, "\nlast_alloc_size ");
+        append_decimal(out, capacity, cursor, diag.last_alloc_size);
+        append_char(out, capacity, cursor, '\n');
+        break;
+    }
     case VirtualFileKind::ProcVmstat: {
         const auto mem = hk::mm::pmm().stats();
         const auto pmm = hk::mm::pmm().diagnostics();
@@ -1775,6 +1813,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/cpu/summary", VirtualFileKind::ProcCpuSummary);
     register_virtual_file("/proc/cpu/topology", VirtualFileKind::ProcCpuTopology);
     register_virtual_file("/proc/mm/summary", VirtualFileKind::ProcMmSummary);
+    register_virtual_file("/proc/heapinfo", VirtualFileKind::ProcHeapinfo);
     register_virtual_file("/proc/vmstat", VirtualFileKind::ProcVmstat);
     register_virtual_file("/proc/buddyinfo", VirtualFileKind::ProcBuddyinfo);
     register_virtual_file("/proc/kmsg", VirtualFileKind::ProcKmsg);
@@ -2555,6 +2594,7 @@ bool self_test() {
     const Node* proc_cpu_topology = vfs().find("/proc/cpu/topology");
     const Node* proc_mm = vfs().find("/proc/mm");
     const Node* proc_mm_summary = vfs().find("/proc/mm/summary");
+    const Node* proc_heapinfo = vfs().find("/proc/heapinfo");
     const Node* proc_vmstat = vfs().find("/proc/vmstat");
     const Node* proc_buddyinfo = vfs().find("/proc/buddyinfo");
     const Node* proc_kmsg = vfs().find("/proc/kmsg");
@@ -2615,6 +2655,7 @@ bool self_test() {
         !proc_cpu_summary || proc_cpu_summary->type != NodeType::VirtualFile || proc_cpu_summary->virtual_kind != VirtualFileKind::ProcCpuSummary ||
         !proc_cpu_topology || proc_cpu_topology->type != NodeType::VirtualFile || proc_cpu_topology->virtual_kind != VirtualFileKind::ProcCpuTopology ||
         !proc_mm_summary || proc_mm_summary->type != NodeType::VirtualFile || proc_mm_summary->virtual_kind != VirtualFileKind::ProcMmSummary ||
+        !proc_heapinfo || proc_heapinfo->type != NodeType::VirtualFile || proc_heapinfo->virtual_kind != VirtualFileKind::ProcHeapinfo ||
         !proc_vmstat || proc_vmstat->type != NodeType::VirtualFile || proc_vmstat->virtual_kind != VirtualFileKind::ProcVmstat ||
         !proc_buddyinfo || proc_buddyinfo->type != NodeType::VirtualFile || proc_buddyinfo->virtual_kind != VirtualFileKind::ProcBuddyinfo ||
         !proc_kmsg || proc_kmsg->type != NodeType::VirtualFile || proc_kmsg->virtual_kind != VirtualFileKind::ProcKmsg ||
@@ -2666,6 +2707,8 @@ bool self_test() {
         proc_buffer[0] != 'C' || proc_buffer[6] != 'I') return false;
     if (vfs().read("/proc/mm/summary", 0, proc_buffer, 9) != 9 ||
         proc_buffer[0] != 'p' || proc_buffer[4] != 't') return false;
+    if (vfs().read("/proc/heapinfo", 0, proc_buffer, 10) != 10 ||
+        proc_buffer[0] != 'h' || proc_buffer[5] != 's') return false;
     if (vfs().read("/proc/vmstat", 0, proc_buffer, 8) != 8 ||
         proc_buffer[0] != 'n' || proc_buffer[3] != 'f') return false;
     if (vfs().read("/proc/buddyinfo", 0, proc_buffer, 6) != 6 ||

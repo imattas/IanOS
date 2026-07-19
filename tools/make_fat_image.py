@@ -11,7 +11,9 @@ SECTORS_PER_CLUSTER = 4
 RESERVED_SECTORS = 1
 FAT_COUNT = 2
 ROOT_ENTRIES = 512
-TOTAL_SECTORS = 131072
+MIN_TOTAL_SECTORS = 32768
+IMAGE_MARGIN_BYTES = 4 * 1024 * 1024
+IMAGE_ALIGN_SECTORS = 2048
 MEDIA_DESCRIPTOR = 0xF8
 EOC = 0xFFFF
 LFN_ATTR = 0x0F
@@ -139,11 +141,33 @@ def dot_entry(name: str, cluster: int) -> bytes:
     return bytes(entry)
 
 
-def fat_geometry() -> tuple[int, int, int, int]:
+def align_up(value: int, align: int) -> int:
+    return ((value + align - 1) // align) * align
+
+
+def estimate_source_bytes(source: pathlib.Path) -> int:
+    cluster_size = BYTES_PER_SECTOR * SECTORS_PER_CLUSTER
+    file_bytes = 0
+    entry_bytes = 0
+    directory_count = 0
+    for path in source.rglob("*"):
+        if path.is_file():
+            file_bytes += align_up(path.stat().st_size, cluster_size)
+            entries = 1 if is_short_name(path.name) else 1 + math.ceil(len(path.name) / LFN_CHARS_PER_ENTRY)
+            entry_bytes += entries * 32
+        elif path.is_dir():
+            directory_count += 1
+            entries = 1 if is_short_name(path.name) else 1 + math.ceil(len(path.name) / LFN_CHARS_PER_ENTRY)
+            entry_bytes += entries * 32
+    directory_bytes = align_up(entry_bytes + directory_count * 64, cluster_size)
+    return file_bytes + directory_bytes + IMAGE_MARGIN_BYTES
+
+
+def fat_geometry(total_sectors: int) -> tuple[int, int, int, int]:
     root_dir_sectors = (ROOT_ENTRIES * 32 + BYTES_PER_SECTOR - 1) // BYTES_PER_SECTOR
     fat_sectors = 1
     while True:
-        data_sectors = TOTAL_SECTORS - RESERVED_SECTORS - FAT_COUNT * fat_sectors - root_dir_sectors
+        data_sectors = total_sectors - RESERVED_SECTORS - FAT_COUNT * fat_sectors - root_dir_sectors
         clusters = data_sectors // SECTORS_PER_CLUSTER
         needed = math.ceil((clusters + 2) * 2 / BYTES_PER_SECTOR)
         if needed == fat_sectors:
@@ -151,13 +175,25 @@ def fat_geometry() -> tuple[int, int, int, int]:
         fat_sectors = needed
 
 
+def choose_total_sectors(source: pathlib.Path) -> int:
+    required_data_sectors = math.ceil(estimate_source_bytes(source) / BYTES_PER_SECTOR)
+    total = MIN_TOTAL_SECTORS
+    while True:
+        fat_sectors, root_dir_sectors, _, clusters = fat_geometry(total)
+        data_sectors = total - RESERVED_SECTORS - FAT_COUNT * fat_sectors - root_dir_sectors
+        if data_sectors >= required_data_sectors and clusters > 4085:
+            return total
+        total = align_up(total + IMAGE_ALIGN_SECTORS, IMAGE_ALIGN_SECTORS)
+
+
 class ImageBuilder:
     def __init__(self, source: pathlib.Path, output: pathlib.Path) -> None:
         self.source = source
         self.output = output
-        self.fat_sectors, self.root_dir_sectors, self.root_sector, self.cluster_count = fat_geometry()
+        self.total_sectors = choose_total_sectors(source)
+        self.fat_sectors, self.root_dir_sectors, self.root_sector, self.cluster_count = fat_geometry(self.total_sectors)
         self.data_sector = self.root_sector + self.root_dir_sectors
-        self.image = bytearray(TOTAL_SECTORS * BYTES_PER_SECTOR)
+        self.image = bytearray(self.total_sectors * BYTES_PER_SECTOR)
         self.fat = [0] * (self.cluster_count + 2)
         self.fat[0] = 0xFFF0 | MEDIA_DESCRIPTOR
         self.fat[1] = EOC
@@ -240,7 +276,7 @@ class ImageBuilder:
         struct.pack_into("<H", bs, 24, 63)
         struct.pack_into("<H", bs, 26, 255)
         struct.pack_into("<I", bs, 28, 0)
-        struct.pack_into("<I", bs, 32, TOTAL_SECTORS)
+        struct.pack_into("<I", bs, 32, self.total_sectors)
         bs[36] = 0x80
         bs[38] = 0x29
         struct.pack_into("<I", bs, 39, 0x484B0001)
