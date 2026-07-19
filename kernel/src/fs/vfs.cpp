@@ -6,6 +6,7 @@
 #include "hk/cpu/topology.hpp"
 #include "hk/drivers/ahci.hpp"
 #include "hk/drivers/driver_manager.hpp"
+#include "hk/drivers/e1000.hpp"
 #include "hk/interrupts/irq.hpp"
 #include "hk/lib/string.hpp"
 #include "hk/log.hpp"
@@ -173,6 +174,10 @@ const char* driver_device_state_name(hk::drivers::DeviceState state) {
     case hk::drivers::DeviceState::Failed: return "failed";
     default: return "bound";
     }
+}
+
+const char* link_state_name(bool up) {
+    return up ? "up" : "down";
 }
 
 const char* terminal_input_mode_name(hybrid::TerminalInputMode mode) {
@@ -1160,6 +1165,77 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_char(out, capacity, cursor, '\n');
         break;
     }
+    case VirtualFileKind::ProcNetSummary: {
+        const auto& adapter = hk::drivers::e1000::driver().adapter();
+        append_text(out, capacity, cursor, "interfaces ");
+        append_decimal(out, capacity, cursor, adapter.present ? 1 : 0);
+        append_text(out, capacity, cursor, "\ne1000_present ");
+        append_decimal(out, capacity, cursor, adapter.present ? 1 : 0);
+        append_text(out, capacity, cursor, "\ne1000_link ");
+        append_text(out, capacity, cursor, link_state_name(adapter.link_up));
+        append_text(out, capacity, cursor, "\ne1000_speed_mbps ");
+        append_decimal(out, capacity, cursor, adapter.link_speed_mbps);
+        append_text(out, capacity, cursor, "\ne1000_full_duplex ");
+        append_decimal(out, capacity, cursor, adapter.full_duplex ? 1 : 0);
+        append_text(out, capacity, cursor, "\ne1000_mac_valid ");
+        append_decimal(out, capacity, cursor, adapter.mac_valid ? 1 : 0);
+        append_text(out, capacity, cursor, "\ne1000_mac ");
+        append_decimal(out, capacity, cursor, adapter.mac_address);
+        append_text(out, capacity, cursor, "\ne1000_mmio_mapped ");
+        append_decimal(out, capacity, cursor, adapter.mmio_mapped ? 1 : 0);
+        append_text(out, capacity, cursor, "\ne1000_command_enabled ");
+        append_decimal(out, capacity, cursor, adapter.command_enabled ? 1 : 0);
+        append_text(out, capacity, cursor, "\ne1000_rings_allocated ");
+        append_decimal(out, capacity, cursor, adapter.rings_allocated ? 1 : 0);
+        append_text(out, capacity, cursor, "\ne1000_rings_programmed ");
+        append_decimal(out, capacity, cursor, adapter.rings_programmed ? 1 : 0);
+        append_text(out, capacity, cursor, "\ne1000_ring_registers_verified ");
+        append_decimal(out, capacity, cursor, adapter.ring_registers_verified ? 1 : 0);
+        append_text(out, capacity, cursor, "\ne1000_tx_packets ");
+        append_decimal(out, capacity, cursor, adapter.tx_packets_submitted);
+        append_text(out, capacity, cursor, "\ne1000_tx_completed ");
+        append_decimal(out, capacity, cursor, adapter.tx_packets_completed);
+        append_text(out, capacity, cursor, "\ne1000_rx_packets ");
+        append_decimal(out, capacity, cursor, adapter.rx_packets_received);
+        append_text(out, capacity, cursor, "\ne1000_rx_bytes ");
+        append_decimal(out, capacity, cursor, adapter.rx_bytes_received);
+        append_text(out, capacity, cursor, "\ne1000_tx_busy_failures ");
+        append_decimal(out, capacity, cursor, adapter.tx_busy_failures);
+        append_text(out, capacity, cursor, "\ne1000_tx_length_rejects ");
+        append_decimal(out, capacity, cursor, adapter.tx_length_rejects);
+        append_text(out, capacity, cursor, "\ne1000_rx_empty_polls ");
+        append_decimal(out, capacity, cursor, adapter.rx_empty_polls);
+        append_text(out, capacity, cursor, "\ne1000_rx_small_buffer_drops ");
+        append_decimal(out, capacity, cursor, adapter.rx_small_buffer_drops);
+        append_char(out, capacity, cursor, '\n');
+        break;
+    }
+    case VirtualFileKind::ProcNetDev: {
+        const auto& adapter = hk::drivers::e1000::driver().adapter();
+        append_text(out, capacity, cursor, "IFACE LINK SPEED_MBPS MAC_VALID RX_PACKETS RX_BYTES TX_PACKETS TX_COMPLETED RX_DROPS TX_ERRORS\n");
+        if (adapter.present) {
+            append_text(out, capacity, cursor, "eth0 ");
+            append_text(out, capacity, cursor, link_state_name(adapter.link_up));
+            append_text(out, capacity, cursor, " ");
+            append_decimal(out, capacity, cursor, adapter.link_speed_mbps);
+            append_text(out, capacity, cursor, " ");
+            append_decimal(out, capacity, cursor, adapter.mac_valid ? 1 : 0);
+            append_text(out, capacity, cursor, " ");
+            append_decimal(out, capacity, cursor, adapter.rx_packets_received);
+            append_text(out, capacity, cursor, " ");
+            append_decimal(out, capacity, cursor, adapter.rx_bytes_received);
+            append_text(out, capacity, cursor, " ");
+            append_decimal(out, capacity, cursor, adapter.tx_packets_submitted);
+            append_text(out, capacity, cursor, " ");
+            append_decimal(out, capacity, cursor, adapter.tx_packets_completed);
+            append_text(out, capacity, cursor, " ");
+            append_decimal(out, capacity, cursor, adapter.rx_small_buffer_drops);
+            append_text(out, capacity, cursor, " ");
+            append_decimal(out, capacity, cursor, adapter.tx_busy_failures + adapter.tx_length_rejects + adapter.tx_null_rejects);
+            append_char(out, capacity, cursor, '\n');
+        }
+        break;
+    }
     case VirtualFileKind::ProcCmdline:
         append_text(out, capacity, cursor, "BOOT_IMAGE=/boot/kernel.elf root=/dev/ram0 rw console=tty0 boot=uefi user=/user/init.elf");
         append_char(out, capacity, cursor, '\n');
@@ -1501,6 +1577,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_directory("/proc/tty");
     register_directory("/proc/cpu");
     register_directory("/proc/mm");
+    register_directory("/proc/net");
     register_directory("/proc/self");
     register_directory("/proc/fs");
     register_directory("/proc/sys");
@@ -1535,6 +1612,8 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/cpu/summary", VirtualFileKind::ProcCpuSummary);
     register_virtual_file("/proc/cpu/topology", VirtualFileKind::ProcCpuTopology);
     register_virtual_file("/proc/mm/summary", VirtualFileKind::ProcMmSummary);
+    register_virtual_file("/proc/net/summary", VirtualFileKind::ProcNetSummary);
+    register_virtual_file("/proc/net/dev", VirtualFileKind::ProcNetDev);
     register_virtual_file("/proc/cmdline", VirtualFileKind::ProcCmdline);
     register_virtual_file("/proc/sys/kernel/hostname", VirtualFileKind::ProcHostname);
     register_virtual_file("/proc/sys/kernel/ostype", VirtualFileKind::ProcOstype);
@@ -2311,6 +2390,9 @@ bool self_test() {
     const Node* proc_cpu_topology = vfs().find("/proc/cpu/topology");
     const Node* proc_mm = vfs().find("/proc/mm");
     const Node* proc_mm_summary = vfs().find("/proc/mm/summary");
+    const Node* proc_net = vfs().find("/proc/net");
+    const Node* proc_net_summary = vfs().find("/proc/net/summary");
+    const Node* proc_net_dev = vfs().find("/proc/net/dev");
     const Node* proc_self = vfs().find("/proc/self");
     const Node* proc_meminfo = vfs().find("/proc/meminfo");
     const Node* proc_uptime = vfs().find("/proc/uptime");
@@ -2336,6 +2418,7 @@ bool self_test() {
         !proc_tty || proc_tty->type != NodeType::Directory ||
         !proc_cpu || proc_cpu->type != NodeType::Directory ||
         !proc_mm || proc_mm->type != NodeType::Directory ||
+        !proc_net || proc_net->type != NodeType::Directory ||
         !proc_self || proc_self->type != NodeType::Directory) return false;
     if (!proc_fs || proc_fs->type != NodeType::Directory ||
         !proc_sys || proc_sys->type != NodeType::Directory ||
@@ -2358,6 +2441,8 @@ bool self_test() {
         !proc_cpu_summary || proc_cpu_summary->type != NodeType::VirtualFile || proc_cpu_summary->virtual_kind != VirtualFileKind::ProcCpuSummary ||
         !proc_cpu_topology || proc_cpu_topology->type != NodeType::VirtualFile || proc_cpu_topology->virtual_kind != VirtualFileKind::ProcCpuTopology ||
         !proc_mm_summary || proc_mm_summary->type != NodeType::VirtualFile || proc_mm_summary->virtual_kind != VirtualFileKind::ProcMmSummary ||
+        !proc_net_summary || proc_net_summary->type != NodeType::VirtualFile || proc_net_summary->virtual_kind != VirtualFileKind::ProcNetSummary ||
+        !proc_net_dev || proc_net_dev->type != NodeType::VirtualFile || proc_net_dev->virtual_kind != VirtualFileKind::ProcNetDev ||
         !proc_cmdline || proc_cmdline->type != NodeType::VirtualFile || proc_cmdline->virtual_kind != VirtualFileKind::ProcCmdline ||
         !proc_hostname || proc_hostname->type != NodeType::VirtualFile || proc_hostname->virtual_kind != VirtualFileKind::ProcHostname ||
         !proc_ostype || proc_ostype->type != NodeType::VirtualFile || proc_ostype->virtual_kind != VirtualFileKind::ProcOstype ||
@@ -2401,6 +2486,10 @@ bool self_test() {
         proc_buffer[0] != 'C' || proc_buffer[6] != 'I') return false;
     if (vfs().read("/proc/mm/summary", 0, proc_buffer, 9) != 9 ||
         proc_buffer[0] != 'p' || proc_buffer[4] != 't') return false;
+    if (vfs().read("/proc/net/summary", 0, proc_buffer, 10) != 10 ||
+        proc_buffer[0] != 'i' || proc_buffer[9] != 's') return false;
+    if (vfs().read("/proc/net/dev", 0, proc_buffer, 6) != 6 ||
+        proc_buffer[0] != 'I' || proc_buffer[5] != ' ') return false;
     if (vfs().read("/proc/cmdline", 0, proc_buffer, 11) != 11 || proc_buffer[0] != 'B' || proc_buffer[10] != '=') return false;
     if (vfs().read("/proc/sys/kernel/hostname", 0, proc_buffer, 6) != 6 ||
         proc_buffer[0] != 'i' || proc_buffer[4] != 's' || proc_buffer[5] != '\n') return false;
