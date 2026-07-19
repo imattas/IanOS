@@ -127,6 +127,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\schedstat.elf", "/bin/schedstat.elf"},
     {L"\\bin\\vmstat.elf", "/bin/vmstat.elf"},
     {L"\\bin\\top.elf", "/bin/top.elf"},
+    {L"\\bin\\pstree.elf", "/bin/pstree.elf"},
     {L"\\bin\\uyield.elf", "/bin/uyield.elf"},
     {L"\\bin\\ubusy.elf", "/bin/ubusy.elf"},
     {L"\\bin\\slowcat.elf", "/bin/slowcat.elf"},
