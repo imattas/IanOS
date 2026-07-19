@@ -33,8 +33,9 @@ The verifier performs the following gates:
   CPL3 frame restoration, Local APIC timer-driven `/bin/ubusy.elf` preemption
   without child `Yield`, and post-child-exit scheduling, shell `PATH`
   resolution through `which`, shell
-  `export`/`unset` and inherited child environment reporting through
-  `/bin/env.elf`, 80-byte environment value storage and inheritance, shell
+  `export`/`unset`, inherited child environment reporting through
+  `/bin/env.elf`, selected external environment lookup through
+  `/bin/printenv.elf`, 80-byte environment value storage and inheritance, shell
   `$?`/`$VAR`/`${VAR}` expansion in both init shell and
   `/bin/sh.elf`, quote-aware child argv with single quotes, double quotes, and
   escaped spaces, shell exit status reporting plus `&&`/`||` control flow,

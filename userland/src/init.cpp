@@ -466,7 +466,7 @@ const char* history_at(uint64_t view) {
 
 void command_help(const char*) {
     shell_line("", "commands: help clear history exit echo status pid ids fgpgid ctx argv env export unset which stat counts spawn jobs fg bg stop usched nextuser uyielddemo upreemptdemo run kill wait reap pwd cd ls cat sh fds ps mem cpus devices fb ticks");
-    shell_line("", "external: hello args cat ls uname hostname free uptime date dmesg ps pwd env sysinfo fastfetch sysctl id ids ctx echo sleep true false touch append rm cp mv dd wc grep tee mkdir rmdir err stat whoami basename dirname head tail test sort uniq find hexdump readelf sha256sum cmp cksum fold printf strings nl tr sed cut paste rev seq expr xargs yes od which sh duptest fds lsof fdinh ln readlink truncate blk mount df du lsblk pipeinfo kill killall pgrep uyield ubusy slowcat burst loop devio tty stty ttyread clear");
+    shell_line("", "external: hello args cat ls uname hostname free uptime date dmesg ps pwd env printenv sysinfo fastfetch sysctl id ids ctx echo sleep true false touch append rm cp mv dd wc grep tee mkdir rmdir err stat whoami basename dirname head tail test sort uniq find hexdump readelf sha256sum cmp cksum fold printf strings nl tr sed cut paste rev seq expr xargs yes od which sh duptest fds lsof fdinh ln readlink truncate blk mount df du lsblk pipeinfo kill killall pgrep uyield ubusy slowcat burst loop devio tty stty ttyread clear");
     shell_line("", "editing: arrows history home end delete tab pageup/pagedown scrollback ctrl-c ctrl-z jobs %n %+ wait -n");
 }
 
@@ -1646,7 +1646,7 @@ const ShellCommand kCommands[] = {
 
 const char* const kExternalCommands[] = {
     "hello", "args", "cat", "ls", "uname", "hostname", "free", "uptime", "date", "dmesg", "ps", "pwd", "env",
-    "sysinfo", "fastfetch", "sysctl", "id", "ids", "ctx", "echo", "sleep", "true", "false", "touch", "append", "rm", "cp", "mv", "dd", "wc", "grep", "tee", "mkdir", "rmdir", "err",
+    "sysinfo", "fastfetch", "sysctl", "id", "ids", "ctx", "echo", "sleep", "true", "false", "touch", "append", "rm", "cp", "mv", "dd", "wc", "grep", "tee", "mkdir", "rmdir", "err", "printenv",
     "stat", "whoami", "basename", "dirname", "head", "tail", "test", "sort", "uniq", "find", "hexdump", "readelf", "sha256sum", "cmp", "cksum", "fold", "printf", "strings", "nl", "tr", "sed", "cut", "paste", "rev", "seq", "expr", "xargs", "yes", "od", "which", "sh", "duptest", "fds", "lsof", "fdinh", "ln", "readlink", "truncate", "blk", "mount", "df", "du", "lsblk", "pipeinfo", "kill", "killall", "pgrep", "uyield", "ubusy", "slowcat", "burst", "loop", "devio", "tty", "stty", "ttyread", "clear",
 };
 
@@ -2555,6 +2555,7 @@ void run_boot_shell_script() {
     run_command("/bin/ps.elf");
     run_command("/bin/pwd.elf");
     run_command("/bin/env.elf");
+    run_command("/bin/printenv.elf", "PATH");
     run_command("unset", "EDITOR");
     run_command("env");
     run_command("sysinfo");
