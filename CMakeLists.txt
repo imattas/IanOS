@@ -18,7 +18,7 @@ set(BOOTLOADER_EFI "${OUT_DIR}/BOOTX64.EFI")
 set(KERNEL_ELF "${OUT_DIR}/kernel.elf")
 set(USER_INIT_ELF "${OUT_DIR}/init.elf")
 set(BOOTABLE_IMG "${OUT_DIR}/image/kernel.img")
-set(USER_PROGRAMS hello args cat ls uname hostname free uptime date cal dmesg ps pwd env printenv sysinfo fastfetch sysctl id ids ctx echo sleep true false touch append rm cp mv dd wc grep tee mkdir rmdir err stat whoami basename dirname head tail test sort uniq find hexdump readelf sha256sum cmp cksum fold printf strings nl tr sed cut paste rev seq expr xargs yes od which sh duptest fds lsof fdinh ln readlink realpath truncate blk mount df du lsblk pipeinfo kill killall pgrep uyield ubusy slowcat burst loop devio tty stty ttyread clear)
+set(USER_PROGRAMS hello args cat ls uname hostname free uptime date cal dmesg ps pwd env printenv sysinfo fastfetch sysctl id ids ctx echo sleep true false touch append rm cp mv dd wc grep tee mkdir rmdir err stat file whoami basename dirname head tail test sort uniq find hexdump readelf sha256sum cmp cksum fold printf strings nl tr sed cut paste rev seq expr xargs yes od which sh duptest fds lsof fdinh ln readlink realpath truncate blk mount df du lsblk pipeinfo kill killall pgrep uyield ubusy slowcat burst loop devio tty stty ttyread clear)
 set(GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")
 set(AP_TRAMPOLINE_BIN "${CMAKE_BINARY_DIR}/kernel/ap_trampoline.bin")
 set(AP_TRAMPOLINE_HEADER "${GENERATED_DIR}/hk/smp/ap_trampoline_bin.hpp")
@@ -33,7 +33,7 @@ add_custom_command(
             -I${CMAKE_SOURCE_DIR}/bootloader/include
             -c "${CMAKE_SOURCE_DIR}/bootloader/src/main.cpp"
             -o "${CMAKE_BINARY_DIR}/bootloader/main.obj"
-    DEPENDS bootloader/src/main.cpp bootloader/include/uefi.hpp common/include/hybrid/boot_info.hpp
+    DEPENDS bootloader/src/main.cpp bootloader/include/uefi.hpp common/include/hybrid/boot_info.hpp common/include/hybrid/version.hpp
     VERBATIM
 )
 
