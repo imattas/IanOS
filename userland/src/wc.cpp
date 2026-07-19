@@ -26,45 +26,81 @@ hybrid::SyscallResult read_blocking(uint64_t fd, char* buffer, uint64_t size) {
     }
 }
 
-}
+struct Counts {
+    uint64_t bytes;
+    uint64_t lines;
+    uint64_t words;
+};
 
-extern "C" [[noreturn]] void _start() {
-    hybrid::ArgumentInfo path;
-    uint64_t fd = hybrid::kStdinFd;
-    bool close_when_done = false;
-    bool has_path = get_arg(1, path);
-    if (has_path) {
-        auto opened = hybrid::user::syscall(hybrid::SyscallNumber::Open, reinterpret_cast<uint64_t>(path.value), hybrid::user::strlen(path.value) + 1);
-        if (opened.error != hybrid::kSyscallErrorNone || opened.value < 3) {
-            hybrid::user::write_hex_line("[wc] ", "open error ", opened.error);
-            hybrid::user::exit(2);
-        }
-        fd = opened.value;
-        close_when_done = true;
-    }
-    uint64_t bytes = 0;
-    uint64_t lines = 0;
-    uint64_t words = 0;
+bool count_stream(uint64_t fd, Counts& counts) {
     bool in_word = false;
     char buffer[32];
     for (;;) {
         auto read = read_blocking(fd, buffer, sizeof(buffer));
-        if (read.error != hybrid::kSyscallErrorNone || read.value == 0) break;
-        bytes += read.value;
+        if (read.value == 0 && (read.error == hybrid::kSyscallErrorNone || read.error == hybrid::kSyscallErrorNotFound)) break;
+        if (read.error != hybrid::kSyscallErrorNone) return false;
+        counts.bytes += read.value;
         for (uint64_t i = 0; i < read.value; ++i) {
-            if (buffer[i] == '\n') ++lines;
+            if (buffer[i] == '\n') ++counts.lines;
             if (is_space(buffer[i])) {
                 in_word = false;
             } else if (!in_word) {
                 in_word = true;
-                ++words;
+                ++counts.words;
             }
         }
     }
-    if (close_when_done) hybrid::user::syscall(hybrid::SyscallNumber::Close, fd);
-    hybrid::user::write_text_line("[wc] ", "path ", has_path ? path.value : "<stdin>");
-    hybrid::user::write_hex_line("[wc] ", "bytes ", bytes);
-    hybrid::user::write_hex_line("[wc] ", "lines ", lines);
-    hybrid::user::write_hex_line("[wc] ", "words ", words);
-    hybrid::user::exit(bytes);
+    return true;
+}
+
+void print_counts(const char* label, const Counts& counts) {
+    hybrid::user::write_text_line("[wc] ", "path ", label);
+    hybrid::user::write_hex_line("[wc] ", "bytes ", counts.bytes);
+    hybrid::user::write_hex_line("[wc] ", "lines ", counts.lines);
+    hybrid::user::write_hex_line("[wc] ", "words ", counts.words);
+}
+
+bool count_path(const char* path, Counts& counts) {
+    auto opened = hybrid::user::syscall(hybrid::SyscallNumber::Open, reinterpret_cast<uint64_t>(path), hybrid::user::strlen(path) + 1);
+    if (opened.error != hybrid::kSyscallErrorNone || opened.value < 3) {
+        hybrid::user::write_hex_line("[wc] ", "open error ", opened.error);
+        return false;
+    }
+    const bool ok = count_stream(opened.value, counts);
+    hybrid::user::syscall(hybrid::SyscallNumber::Close, opened.value);
+    return ok;
+}
+
+}
+
+extern "C" [[noreturn]] void _start() {
+    auto argc = hybrid::user::syscall(hybrid::SyscallNumber::GetArgumentCount);
+    if (argc.error != hybrid::kSyscallErrorNone || argc.value < 2) {
+        Counts counts{};
+        if (!count_stream(hybrid::kStdinFd, counts)) {
+            hybrid::user::write_line("[wc] read error");
+            hybrid::user::exit(3);
+        }
+        print_counts("<stdin>", counts);
+        hybrid::user::exit(counts.bytes);
+    }
+
+    Counts total{};
+    for (uint64_t index = 1; index < argc.value; ++index) {
+        hybrid::ArgumentInfo path;
+        if (!get_arg(index, path)) {
+            hybrid::user::write_line("[wc] missing path");
+            hybrid::user::exit(2);
+        }
+        Counts counts{};
+        if (!count_path(path.value, counts)) {
+            hybrid::user::exit(2);
+        }
+        print_counts(path.value, counts);
+        total.bytes += counts.bytes;
+        total.lines += counts.lines;
+        total.words += counts.words;
+    }
+    if (argc.value > 2) print_counts("total", total);
+    hybrid::user::exit(total.bytes);
 }

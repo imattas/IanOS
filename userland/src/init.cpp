@@ -2532,6 +2532,7 @@ void run_boot_shell_script() {
     run_command("/bin/dd.elf", "if=/etc/hostname of=/tmp/dd-host bs=6 count=1");
     run_command("/bin/cat.elf", "/tmp/dd-host");
     run_command("/bin/wc.elf", "/tmp/dd-host");
+    run_command("/bin/wc.elf", "/etc/hostname /proc/sys/kernel/hostname");
     run_command("/bin/cmp.elf", "/etc/hostname /proc/sys/kernel/hostname");
     run_command("/bin/cmp.elf", "/etc/hostname /etc/os-release");
     run_command("/bin/strings.elf", "/etc/os-release");
