@@ -55,7 +55,7 @@ The verifier performs the following gates:
   and reads, default `/dev/tty` fd 0/1/2 process descriptors,
   `/proc/self/fd/1` readlink and realpath resolution under stdout redirection,
   `/dev/null`, `/dev/zero`, `/dev/tty`, and `/dev/console` character-device
-  metadata plus bounded `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`,
+  metadata plus bounded `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/findmnt.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`,
   and `/bin/ttyread.elf` input-mode, read/write, mode-switch, canonical stdin,
   `/bin/clear.elf` terminal-clear execution, and terminal-read idle proof,
   AHCI-backed `/disk/bootsector.bin`, block-cache self-test markers,
@@ -67,7 +67,7 @@ The verifier performs the following gates:
   recursive directory traversal through `tree`,
   path-to-filesystem ownership through `statfs`,
   `basename`, `dirname`, option-bounded `head` and `tail`, and quiet
-  `test` predicates chained through `&&`/`||`, external `sort`/`uniq -c`/`uniq -d`/`uniq -u`/`find`/`hexdump`/`od`/`base64`/`which`/`readelf`/`file`/`sha256sum`/`sha224sum`/`sha512sum`/`sha384sum`/`sha1sum`/`md5sum`/`cksum`/`fold`/`printf`/`dd`/`xargs`/`yes`/`cmp`/`strings`/`nl`/`tr`/`sed`/`cut`/`paste`/`rev`/`tac`/`seq`/`expr`/`nproc`/`lscpu`/`schedstat`/`vmstat`/`top`/`pstree`, and
+  `test` predicates chained through `&&`/`||`, external `sort`/`uniq -c`/`uniq -d`/`uniq -u`/`find`/`hexdump`/`od`/`base64`/`which`/`readelf`/`file`/`sha256sum`/`sha224sum`/`sha512sum`/`sha384sum`/`sha1sum`/`md5sum`/`cksum`/`fold`/`printf`/`dd`/`xargs`/`yes`/`cmp`/`strings`/`nl`/`tr`/`sed`/`cut`/`paste`/`rev`/`tac`/`seq`/`expr`/`nproc`/`lscpu`/`schedstat`/`vmstat`/`top`/`pstree`/`findmnt`, and
   bounded `sh` script execution from a VFS file,
   process-name lookup through `pgrep` and `pidof`,
   SIGKILL and SIGTERM child termination with distinct wait statuses, shell
