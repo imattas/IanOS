@@ -1235,6 +1235,45 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_char(out, capacity, cursor, '\n');
         break;
     }
+    case VirtualFileKind::ProcVmstat: {
+        const auto mem = hk::mm::pmm().stats();
+        const auto pmm = hk::mm::pmm().diagnostics();
+        const auto vmm = hk::mm::vmm().diagnostics();
+        append_text(out, capacity, cursor, "nr_free_pages ");
+        append_decimal(out, capacity, cursor, mem.free_pages);
+        append_text(out, capacity, cursor, "\nnr_used_pages ");
+        append_decimal(out, capacity, cursor, mem.used_pages);
+        append_text(out, capacity, cursor, "\nnr_total_pages ");
+        append_decimal(out, capacity, cursor, mem.total_pages);
+        append_text(out, capacity, cursor, "\npgalloc_normal ");
+        append_decimal(out, capacity, cursor, pmm.allocate_page_calls + pmm.allocate_contiguous_calls);
+        append_text(out, capacity, cursor, "\npgfree ");
+        append_decimal(out, capacity, cursor, pmm.free_page_calls + pmm.free_contiguous_calls);
+        append_text(out, capacity, cursor, "\npgfault ");
+        append_decimal(out, capacity, cursor, vmm.failed_maps + vmm.failed_unmaps);
+        append_text(out, capacity, cursor, "\npgmap ");
+        append_decimal(out, capacity, cursor, vmm.mapped_pages);
+        append_text(out, capacity, cursor, "\npgunmap ");
+        append_decimal(out, capacity, cursor, vmm.unmapped_pages);
+        append_text(out, capacity, cursor, "\npgmap_fail ");
+        append_decimal(out, capacity, cursor, vmm.failed_maps);
+        append_text(out, capacity, cursor, "\npgunmap_fail ");
+        append_decimal(out, capacity, cursor, vmm.failed_unmaps);
+        append_text(out, capacity, cursor, "\npgduplicate ");
+        append_decimal(out, capacity, cursor, vmm.duplicate_map_rejects);
+        append_text(out, capacity, cursor, "\npgunaligned ");
+        append_decimal(out, capacity, cursor, vmm.unaligned_map_rejects);
+        append_text(out, capacity, cursor, "\npgabsent ");
+        append_decimal(out, capacity, cursor, vmm.absent_unmap_rejects);
+        append_text(out, capacity, cursor, "\ntlb_remote_shootdowns ");
+        append_decimal(out, capacity, cursor, vmm.remote_shootdowns_requested);
+        append_text(out, capacity, cursor, "\npmm_failed_allocations ");
+        append_decimal(out, capacity, cursor, pmm.failed_allocations);
+        append_text(out, capacity, cursor, "\npmm_invalid_frees ");
+        append_decimal(out, capacity, cursor, pmm.invalid_frees);
+        append_char(out, capacity, cursor, '\n');
+        break;
+    }
     case VirtualFileKind::ProcBuddyinfo: {
         auto& pmm = hk::mm::pmm();
         const auto mem = pmm.stats();
@@ -1736,6 +1775,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/cpu/summary", VirtualFileKind::ProcCpuSummary);
     register_virtual_file("/proc/cpu/topology", VirtualFileKind::ProcCpuTopology);
     register_virtual_file("/proc/mm/summary", VirtualFileKind::ProcMmSummary);
+    register_virtual_file("/proc/vmstat", VirtualFileKind::ProcVmstat);
     register_virtual_file("/proc/buddyinfo", VirtualFileKind::ProcBuddyinfo);
     register_virtual_file("/proc/kmsg", VirtualFileKind::ProcKmsg);
     register_virtual_file("/proc/net/summary", VirtualFileKind::ProcNetSummary);
@@ -2515,6 +2555,7 @@ bool self_test() {
     const Node* proc_cpu_topology = vfs().find("/proc/cpu/topology");
     const Node* proc_mm = vfs().find("/proc/mm");
     const Node* proc_mm_summary = vfs().find("/proc/mm/summary");
+    const Node* proc_vmstat = vfs().find("/proc/vmstat");
     const Node* proc_buddyinfo = vfs().find("/proc/buddyinfo");
     const Node* proc_kmsg = vfs().find("/proc/kmsg");
     const Node* proc_net = vfs().find("/proc/net");
@@ -2574,6 +2615,7 @@ bool self_test() {
         !proc_cpu_summary || proc_cpu_summary->type != NodeType::VirtualFile || proc_cpu_summary->virtual_kind != VirtualFileKind::ProcCpuSummary ||
         !proc_cpu_topology || proc_cpu_topology->type != NodeType::VirtualFile || proc_cpu_topology->virtual_kind != VirtualFileKind::ProcCpuTopology ||
         !proc_mm_summary || proc_mm_summary->type != NodeType::VirtualFile || proc_mm_summary->virtual_kind != VirtualFileKind::ProcMmSummary ||
+        !proc_vmstat || proc_vmstat->type != NodeType::VirtualFile || proc_vmstat->virtual_kind != VirtualFileKind::ProcVmstat ||
         !proc_buddyinfo || proc_buddyinfo->type != NodeType::VirtualFile || proc_buddyinfo->virtual_kind != VirtualFileKind::ProcBuddyinfo ||
         !proc_kmsg || proc_kmsg->type != NodeType::VirtualFile || proc_kmsg->virtual_kind != VirtualFileKind::ProcKmsg ||
         !proc_net_summary || proc_net_summary->type != NodeType::VirtualFile || proc_net_summary->virtual_kind != VirtualFileKind::ProcNetSummary ||
@@ -2624,6 +2666,8 @@ bool self_test() {
         proc_buffer[0] != 'C' || proc_buffer[6] != 'I') return false;
     if (vfs().read("/proc/mm/summary", 0, proc_buffer, 9) != 9 ||
         proc_buffer[0] != 'p' || proc_buffer[4] != 't') return false;
+    if (vfs().read("/proc/vmstat", 0, proc_buffer, 8) != 8 ||
+        proc_buffer[0] != 'n' || proc_buffer[3] != 'f') return false;
     if (vfs().read("/proc/buddyinfo", 0, proc_buffer, 6) != 6 ||
         proc_buffer[0] != 'N' || proc_buffer[5] != '0') return false;
     if (vfs().read("/proc/kmsg", 0, proc_buffer, 7) != 7) return false;
