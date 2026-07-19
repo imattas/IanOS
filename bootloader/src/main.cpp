@@ -74,6 +74,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\hexdump.elf", "/bin/hexdump.elf"},
     {L"\\bin\\readelf.elf", "/bin/readelf.elf"},
     {L"\\bin\\sha256sum.elf", "/bin/sha256sum.elf"},
+    {L"\\bin\\sha224sum.elf", "/bin/sha224sum.elf"},
     {L"\\bin\\sha512sum.elf", "/bin/sha512sum.elf"},
     {L"\\bin\\sha384sum.elf", "/bin/sha384sum.elf"},
     {L"\\bin\\sha1sum.elf", "/bin/sha1sum.elf"},
