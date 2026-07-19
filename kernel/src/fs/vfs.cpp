@@ -1,6 +1,7 @@
 #include "hk/fs/vfs.hpp"
 #include "hk/apic/apic.hpp"
 #include "hk/block/block_device.hpp"
+#include "hk/boot/bootinfo.hpp"
 #include "hk/console.hpp"
 #include "hk/cpu/runtime.hpp"
 #include "hk/cpu/topology.hpp"
@@ -54,6 +55,8 @@ char mounted_fat_paths[kMaxMountedFatNodes][64]{};
 uint32_t mounted_fat_path_count = 0;
 const hybrid::BootModule* boot_module_table = nullptr;
 uint64_t boot_module_count = 0;
+const hybrid::MemoryRegion* boot_memory_map = nullptr;
+uint64_t boot_memory_map_entries = 0;
 
 struct Fat16Geometry {
     uint16_t bytes_per_sector;
@@ -151,7 +154,26 @@ void append_decimal(char* buffer, uint64_t capacity, uint64_t& cursor, uint64_t 
     while (count > 0) append_char(buffer, capacity, cursor, digits[--count]);
 }
 
+void append_hex_fixed(char* buffer, uint64_t capacity, uint64_t& cursor, uint64_t value, uint8_t nibbles) {
+    constexpr char kHex[] = "0123456789abcdef";
+    for (int32_t i = static_cast<int32_t>(nibbles) - 1; i >= 0; --i) {
+        append_char(buffer, capacity, cursor, kHex[(value >> (static_cast<uint32_t>(i) * 4u)) & 0xfu]);
+    }
+}
+
+void append_iomem_range(char* out, uint64_t capacity, uint64_t& cursor, uint64_t base, uint64_t length, const char* label) {
+    if (length == 0) return;
+    uint64_t end = base + length - 1;
+    append_hex_fixed(out, capacity, cursor, base, 16);
+    append_char(out, capacity, cursor, '-');
+    append_hex_fixed(out, capacity, cursor, end, 16);
+    append_text(out, capacity, cursor, " : ");
+    append_text(out, capacity, cursor, label);
+    append_char(out, capacity, cursor, '\n');
+}
+
 void append_module_line(char* out, uint64_t capacity, uint64_t& cursor, const hybrid::BootModule& module);
+const char* module_name_from_path(const char* path);
 
 const char* pci_bar_type_name(hk::pci::BarType type) {
     switch (type) {
@@ -189,6 +211,19 @@ const char* terminal_input_mode_name(hybrid::TerminalInputMode mode) {
     switch (mode) {
     case hybrid::TerminalInputMode::Canonical: return "canonical";
     default: return "raw";
+    }
+}
+
+const char* memory_type_name(hybrid::MemoryType type) {
+    switch (type) {
+    case hybrid::MemoryType::Usable: return "System RAM";
+    case hybrid::MemoryType::BootServices: return "UEFI boot services";
+    case hybrid::MemoryType::RuntimeServices: return "UEFI runtime services";
+    case hybrid::MemoryType::AcpiReclaim: return "ACPI reclaim";
+    case hybrid::MemoryType::AcpiNvs: return "ACPI NVS";
+    case hybrid::MemoryType::Mmio: return "MMIO";
+    case hybrid::MemoryType::Bad: return "Bad RAM";
+    default: return "Reserved";
     }
 }
 
@@ -597,6 +632,40 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_text(out, capacity, cursor, "\nPagesUsed: ");
         append_decimal(out, capacity, cursor, stats.used_pages);
         append_char(out, capacity, cursor, '\n');
+        break;
+    }
+    case VirtualFileKind::ProcIomem: {
+        if (boot_memory_map) {
+            for (uint64_t i = 0; i < boot_memory_map_entries; ++i) {
+                const auto& region = boot_memory_map[i];
+                append_iomem_range(out, capacity, cursor, region.base, region.length, memory_type_name(region.type));
+            }
+        }
+        const auto& boot = hk::boot::retained_boot_info();
+        append_iomem_range(out, capacity, cursor, boot.kernel_physical_base,
+                           boot.kernel_physical_end > boot.kernel_physical_base ? boot.kernel_physical_end - boot.kernel_physical_base : 0,
+                           "Mattas kernel");
+        append_iomem_range(out, capacity, cursor, boot.framebuffer.base,
+                           static_cast<uint64_t>(boot.framebuffer.pixels_per_scanline) * boot.framebuffer.height * boot.framebuffer.bytes_per_pixel,
+                           "EFI framebuffer");
+        append_iomem_range(out, capacity, cursor, boot.rsdp, boot.rsdp != 0 ? 36 : 0, "ACPI RSDP");
+        if (boot_module_table) {
+            uint64_t skipped_modules = 0;
+            for (uint64_t i = 0; i < boot_module_count; ++i) {
+                const auto& module = boot_module_table[i];
+                if (module.base == 0 || module.size == 0) continue;
+                if (cursor + 128 >= capacity) {
+                    skipped_modules = boot_module_count - i;
+                    break;
+                }
+                append_iomem_range(out, capacity, cursor, module.base, module.size, module_name_from_path(module.path));
+            }
+            if (skipped_modules != 0 && cursor + 48 < capacity) {
+                append_text(out, capacity, cursor, "# modules_truncated ");
+                append_decimal(out, capacity, cursor, skipped_modules);
+                append_char(out, capacity, cursor, '\n');
+            }
+        }
         break;
     }
     case VirtualFileKind::ProcUptime:
@@ -1762,6 +1831,8 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     for (auto& path : mounted_fat_paths) path[0] = 0;
     boot_module_table = reinterpret_cast<const hybrid::BootModule*>(boot.boot_modules);
     boot_module_count = boot.boot_module_count <= hybrid::kMaxBootModules ? boot.boot_module_count : 0;
+    boot_memory_map = reinterpret_cast<const hybrid::MemoryRegion*>(boot.memory_map);
+    boot_memory_map_entries = boot.memory_map_entries <= 4096 ? boot.memory_map_entries : 0;
     register_directory("/");
     register_directory("/boot");
     register_directory("/user");
@@ -1793,6 +1864,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_memory_file("/proc/version", reinterpret_cast<uint64_t>(kProcVersion), sizeof(kProcVersion) - 1);
     register_memory_file("/proc/cpuinfo", reinterpret_cast<uint64_t>(kProcCpuInfo), sizeof(kProcCpuInfo) - 1);
     register_virtual_file("/proc/meminfo", VirtualFileKind::ProcMeminfo);
+    register_virtual_file("/proc/iomem", VirtualFileKind::ProcIomem);
     register_virtual_file("/proc/uptime", VirtualFileKind::ProcUptime);
     register_virtual_file("/proc/loadavg", VirtualFileKind::ProcLoadavg);
     register_virtual_file("/proc/sched_debug", VirtualFileKind::ProcSchedDebug);
@@ -2603,6 +2675,7 @@ bool self_test() {
     const Node* proc_net_dev = vfs().find("/proc/net/dev");
     const Node* proc_self = vfs().find("/proc/self");
     const Node* proc_meminfo = vfs().find("/proc/meminfo");
+    const Node* proc_iomem = vfs().find("/proc/iomem");
     const Node* proc_uptime = vfs().find("/proc/uptime");
     const Node* proc_loadavg = vfs().find("/proc/loadavg");
     const Node* proc_sched_debug = vfs().find("/proc/sched_debug");
@@ -2635,6 +2708,7 @@ bool self_test() {
         !proc_sys || proc_sys->type != NodeType::Directory ||
         !proc_sys_kernel || proc_sys_kernel->type != NodeType::Directory) return false;
     if (!proc_meminfo || proc_meminfo->type != NodeType::VirtualFile || proc_meminfo->virtual_kind != VirtualFileKind::ProcMeminfo ||
+        !proc_iomem || proc_iomem->type != NodeType::VirtualFile || proc_iomem->virtual_kind != VirtualFileKind::ProcIomem ||
         !proc_uptime || proc_uptime->type != NodeType::VirtualFile || proc_uptime->virtual_kind != VirtualFileKind::ProcUptime ||
         !proc_loadavg || proc_loadavg->type != NodeType::VirtualFile || proc_loadavg->virtual_kind != VirtualFileKind::ProcLoadavg ||
         !proc_sched_debug || proc_sched_debug->type != NodeType::VirtualFile || proc_sched_debug->virtual_kind != VirtualFileKind::ProcSchedDebug ||
@@ -2672,6 +2746,7 @@ bool self_test() {
     }
     char proc_buffer[32];
     if (vfs().read("/proc/meminfo", 0, proc_buffer, 9) != 9 || proc_buffer[0] != 'M' || proc_buffer[3] != 'T') return false;
+    if (vfs().read("/proc/iomem", 0, proc_buffer, 17) != 17 || proc_buffer[4] != '0' || proc_buffer[16] != '-') return false;
     uint32_t proc_handle = vfs().open("/proc/uptime");
     if (proc_handle == 0) return false;
     char uptime_buffer[8];

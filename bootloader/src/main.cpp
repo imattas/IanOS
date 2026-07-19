@@ -123,6 +123,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\findmnt.elf", "/bin/findmnt.elf"},
     {L"\\bin\\iostat.elf", "/bin/iostat.elf"},
     {L"\\bin\\lsmem.elf", "/bin/lsmem.elf"},
+    {L"\\bin\\iomem.elf", "/bin/iomem.elf"},
     {L"\\bin\\fbset.elf", "/bin/fbset.elf"},
     {L"\\bin\\lspci.elf", "/bin/lspci.elf"},
     {L"\\bin\\irqstat.elf", "/bin/irqstat.elf"},

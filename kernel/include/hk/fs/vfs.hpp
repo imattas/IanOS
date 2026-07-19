@@ -11,6 +11,7 @@ enum class DeviceKind : uint8_t { None, Null, Zero, Tty, Console };
 enum class VirtualFileKind : uint8_t {
     None,
     ProcMeminfo,
+    ProcIomem,
     ProcUptime,
     ProcLoadavg,
     ProcSchedDebug,
