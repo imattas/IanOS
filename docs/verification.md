@@ -62,7 +62,7 @@ The verifier performs the following gates:
   RTC-backed external `date`,
   `/etc/hostname`, `/proc/sys/kernel/*` identity files, external `hostname`, external `id`, external `whoami`,
   `basename`, `dirname`, `head`, `tail`, and quiet
-  `test` predicates chained through `&&`/`||`, external `sort`/`uniq`/`find`/`hexdump`/`readelf`/`sha256sum`/`cmp`/`strings`/`nl`/`tr`/`sed`/`cut`, and
+  `test` predicates chained through `&&`/`||`, external `sort`/`uniq`/`find`/`hexdump`/`readelf`/`sha256sum`/`cmp`/`strings`/`nl`/`tr`/`sed`/`cut`/`paste`, and
   bounded `sh` script execution from a VFS file,
   SIGKILL and SIGTERM child termination with distinct wait statuses, shell
   `jobs` table updates, and `&` background external command launch,
