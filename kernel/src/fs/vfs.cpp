@@ -49,8 +49,11 @@ constexpr char kProcCpuInfo[] =
     "arch\t\t: x86_64\n";
 
 constexpr uint32_t kMaxMountedFatNodes = 160;
+constexpr uint64_t kVirtualFileScratchBytes = 8192;
 char mounted_fat_paths[kMaxMountedFatNodes][64]{};
 uint32_t mounted_fat_path_count = 0;
+const hybrid::BootModule* boot_module_table = nullptr;
+uint64_t boot_module_count = 0;
 
 struct Fat16Geometry {
     uint16_t bytes_per_sector;
@@ -147,6 +150,8 @@ void append_decimal(char* buffer, uint64_t capacity, uint64_t& cursor, uint64_t 
     } while (value != 0 && count < sizeof(digits));
     while (count > 0) append_char(buffer, capacity, cursor, digits[--count]);
 }
+
+void append_module_line(char* out, uint64_t capacity, uint64_t& cursor, const hybrid::BootModule& module);
 
 const char* pci_bar_type_name(hk::pci::BarType type) {
     switch (type) {
@@ -1236,6 +1241,16 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         }
         break;
     }
+    case VirtualFileKind::ProcModules: {
+        append_text(out, capacity, cursor, "NAME SIZE ADDRESS PATH\n");
+        if (boot_module_table) {
+            for (uint64_t i = 0; i < boot_module_count; ++i) {
+                const auto& module = boot_module_table[i];
+                if (module.path[0] != 0 && module.base != 0 && module.size != 0) append_module_line(out, capacity, cursor, module);
+            }
+        }
+        break;
+    }
     case VirtualFileKind::ProcCmdline:
         append_text(out, capacity, cursor, "BOOT_IMAGE=/boot/kernel.elf root=/dev/ram0 rw console=tty0 boot=uefi user=/user/init.elf");
         append_char(out, capacity, cursor, '\n');
@@ -1259,7 +1274,7 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
 }
 
 uint64_t virtual_file_size(VirtualFileKind kind) {
-    char scratch[2048];
+    char scratch[kVirtualFileScratchBytes];
     return render_virtual_file(kind, scratch, sizeof(scratch));
 }
 
@@ -1450,6 +1465,22 @@ const char* basename_of(const char* path) {
     return name;
 }
 
+const char* module_name_from_path(const char* path) {
+    const char* name = basename_of(path);
+    return name && name[0] != 0 ? name : "module";
+}
+
+void append_module_line(char* out, uint64_t capacity, uint64_t& cursor, const hybrid::BootModule& module) {
+    append_text(out, capacity, cursor, module_name_from_path(module.path));
+    append_text(out, capacity, cursor, " ");
+    append_decimal(out, capacity, cursor, module.size);
+    append_text(out, capacity, cursor, " ");
+    append_decimal(out, capacity, cursor, module.base);
+    append_text(out, capacity, cursor, " ");
+    append_text(out, capacity, cursor, module.path);
+    append_char(out, capacity, cursor, '\n');
+}
+
 void copy_path(char (&out)[64], const char* path) {
     uint64_t i = 0;
     if (path) {
@@ -1564,6 +1595,8 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     for (auto& mount : mounts_) mount = MountRecord{};
     mounted_fat_path_count = 0;
     for (auto& path : mounted_fat_paths) path[0] = 0;
+    boot_module_table = reinterpret_cast<const hybrid::BootModule*>(boot.boot_modules);
+    boot_module_count = boot.boot_module_count <= hybrid::kMaxBootModules ? boot.boot_module_count : 0;
     register_directory("/");
     register_directory("/boot");
     register_directory("/user");
@@ -1598,6 +1631,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/uptime", VirtualFileKind::ProcUptime);
     register_virtual_file("/proc/stat", VirtualFileKind::ProcStat);
     register_virtual_file("/proc/processes", VirtualFileKind::ProcProcesses);
+    register_virtual_file("/proc/modules", VirtualFileKind::ProcModules);
     register_virtual_file("/proc/mounts", VirtualFileKind::ProcMounts);
     register_virtual_file("/proc/filesystems", VirtualFileKind::ProcFilesystems);
     register_virtual_file("/proc/fs/vfs", VirtualFileKind::ProcVfsStats);
@@ -1624,10 +1658,9 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     if (boot.kernel_physical_base != 0 && boot.kernel_physical_end > boot.kernel_physical_base) {
         register_memory_file("/boot/kernel.elf", boot.kernel_physical_base, boot.kernel_physical_end - boot.kernel_physical_base);
     }
-    auto* modules = reinterpret_cast<const hybrid::BootModule*>(boot.boot_modules);
-    for (uint64_t i = 0; i < boot.boot_module_count; ++i) {
-        if (modules[i].path[0] == '/' && modules[i].base != 0 && modules[i].size != 0) {
-            register_memory_file(modules[i].path, modules[i].base, modules[i].size);
+    for (uint64_t i = 0; i < boot_module_count; ++i) {
+        if (boot_module_table[i].path[0] == '/' && boot_module_table[i].base != 0 && boot_module_table[i].size != 0) {
+            register_memory_file(boot_module_table[i].path, boot_module_table[i].base, boot_module_table[i].size);
         }
     }
     const auto& ahci = hk::drivers::ahci::driver().controller();
@@ -1980,7 +2013,7 @@ size_t Vfs::read(const char* path, uint64_t offset, void* buffer, size_t size) c
     if (!buffer || size == 0) return 0;
     char normalized[64]{};
     if (normalize_path(normalized, path)) {
-        char generated[2048];
+        char generated[kVirtualFileScratchBytes];
         uint64_t generated_size = render_dynamic_proc_file(normalized, generated, sizeof(generated));
         if (generated_size != 0) {
             if (offset >= generated_size) return 0;
@@ -1993,7 +2026,7 @@ size_t Vfs::read(const char* path, uint64_t offset, void* buffer, size_t size) c
     const Node* node = find(path);
     if (!node || (node->type != NodeType::MemoryFile && node->type != NodeType::VirtualFile)) return 0;
     if (node->type == NodeType::VirtualFile) {
-        char generated[2048];
+        char generated[kVirtualFileScratchBytes];
         uint64_t generated_size = render_virtual_file(node->virtual_kind, generated, sizeof(generated));
         if (offset >= generated_size) return 0;
         uint64_t available = generated_size - offset;
@@ -2053,7 +2086,7 @@ size_t Vfs::read_handle(uint32_t handle, void* buffer, size_t size) {
     FileHandle* entry = handle_for(handle);
     if (!entry || !buffer || size == 0) return 0;
     if (entry->dynamic_virtual) {
-        char generated[2048];
+        char generated[kVirtualFileScratchBytes];
         uint64_t generated_size = render_dynamic_proc_file(entry->path, generated, sizeof(generated));
         if (entry->offset >= generated_size) return 0;
         uint64_t available = generated_size - entry->offset;
@@ -2077,7 +2110,7 @@ size_t Vfs::read_handle(uint32_t handle, void* buffer, size_t size) {
         return 0;
     }
     if (entry->node->type == NodeType::VirtualFile) {
-        char generated[2048];
+        char generated[kVirtualFileScratchBytes];
         uint64_t generated_size = render_virtual_file(entry->node->virtual_kind, generated, sizeof(generated));
         if (entry->offset >= generated_size) return 0;
         uint64_t available = generated_size - entry->offset;
@@ -2398,6 +2431,7 @@ bool self_test() {
     const Node* proc_uptime = vfs().find("/proc/uptime");
     const Node* proc_stat = vfs().find("/proc/stat");
     const Node* proc_processes = vfs().find("/proc/processes");
+    const Node* proc_modules = vfs().find("/proc/modules");
     const Node* proc_mounts = vfs().find("/proc/mounts");
     const Node* proc_filesystems = vfs().find("/proc/filesystems");
     const Node* proc_fs = vfs().find("/proc/fs");
@@ -2427,6 +2461,7 @@ bool self_test() {
         !proc_uptime || proc_uptime->type != NodeType::VirtualFile || proc_uptime->virtual_kind != VirtualFileKind::ProcUptime ||
         !proc_stat || proc_stat->type != NodeType::VirtualFile || proc_stat->virtual_kind != VirtualFileKind::ProcStat ||
         !proc_processes || proc_processes->type != NodeType::VirtualFile || proc_processes->virtual_kind != VirtualFileKind::ProcProcesses ||
+        !proc_modules || proc_modules->type != NodeType::VirtualFile || proc_modules->virtual_kind != VirtualFileKind::ProcModules ||
         !proc_mounts || proc_mounts->type != NodeType::VirtualFile || proc_mounts->virtual_kind != VirtualFileKind::ProcMounts ||
         !proc_filesystems || proc_filesystems->type != NodeType::VirtualFile || proc_filesystems->virtual_kind != VirtualFileKind::ProcFilesystems ||
         !proc_vfs || proc_vfs->type != NodeType::VirtualFile || proc_vfs->virtual_kind != VirtualFileKind::ProcVfsStats ||
@@ -2460,6 +2495,7 @@ bool self_test() {
     if (vfs().read_handle(proc_handle, uptime_buffer, 6) != 6 || uptime_buffer[0] != 't' || uptime_buffer[5] != ' ') return false;
     if (!vfs().close(proc_handle)) return false;
     if (vfs().read("/proc/processes", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'P' || proc_buffer[4] != 'P') return false;
+    if (vfs().read("/proc/modules", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'N' || proc_buffer[5] != 'S') return false;
     if (vfs().read("/proc/stat", 0, proc_buffer, 4) != 4 || proc_buffer[0] != 'c' || proc_buffer[3] != ' ') return false;
     if (vfs().read("/proc/mounts", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'b' || proc_buffer[5] != 'm') return false;
     if (vfs().read("/proc/filesystems", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'n' || proc_buffer[5] != '\t') return false;
