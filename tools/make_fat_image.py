@@ -14,6 +14,9 @@ ROOT_ENTRIES = 512
 TOTAL_SECTORS = 131072
 MEDIA_DESCRIPTOR = 0xF8
 EOC = 0xFFFF
+LFN_ATTR = 0x0F
+LFN_LAST = 0x40
+LFN_CHARS_PER_ENTRY = 13
 
 
 def short_name(name: str) -> bytes:
@@ -31,6 +34,77 @@ def short_name(name: str) -> bytes:
     return base.encode("ascii").ljust(8, b" ") + ext.encode("ascii").ljust(3, b" ")
 
 
+def is_short_name(name: str) -> bool:
+    try:
+        short_name(name)
+        return True
+    except ValueError:
+        return False
+
+
+def sanitize_short_part(text: str) -> str:
+    allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$%'-_@~`!(){}^#&")
+    out = "".join(ch for ch in text.upper() if ch in allowed)
+    return out or "FILE"
+
+
+def make_short_alias(name: str, used: set[bytes]) -> bytes:
+    if "." in name:
+        base, ext = name.rsplit(".", 1)
+    else:
+        base, ext = name, ""
+    clean_base = sanitize_short_part(base)
+    clean_ext = sanitize_short_part(ext)[:3] if ext else ""
+    for index in range(1, 100):
+        suffix = f"~{index}"
+        alias_base = (clean_base[:8 - len(suffix)] + suffix).ljust(8, " ")
+        candidate = alias_base.encode("ascii") + clean_ext.encode("ascii").ljust(3, b" ")
+        if candidate not in used:
+            return candidate
+    raise ValueError(f"could not generate unique FAT 8.3 alias for {name!r}")
+
+
+def lfn_checksum(short: bytes) -> int:
+    checksum = 0
+    for value in short:
+        checksum = (((checksum & 1) << 7) + (checksum >> 1) + value) & 0xFF
+    return checksum
+
+
+def lfn_entry(sequence: int, chars: list[int], checksum: int) -> bytes:
+    entry = bytearray(32)
+    entry[0] = sequence
+    entry[11] = LFN_ATTR
+    entry[13] = checksum
+    for i, value in enumerate(chars):
+        if i < 5:
+            offset = 1 + i * 2
+        elif i < 11:
+            offset = 14 + (i - 5) * 2
+        else:
+            offset = 28 + (i - 11) * 2
+        struct.pack_into("<H", entry, offset, value)
+    return bytes(entry)
+
+
+def lfn_entries(name: str, short: bytes) -> list[bytes]:
+    chars = [ord(ch) for ch in name]
+    chunks = [chars[i:i + LFN_CHARS_PER_ENTRY] for i in range(0, len(chars), LFN_CHARS_PER_ENTRY)]
+    if not chunks:
+        return []
+    checksum = lfn_checksum(short)
+    entries: list[bytes] = []
+    for sequence, chunk in enumerate(chunks, start=1):
+        values = chunk[:]
+        if len(values) < LFN_CHARS_PER_ENTRY:
+            values.append(0)
+            while len(values) < LFN_CHARS_PER_ENTRY:
+                values.append(0xFFFF)
+        marker = sequence | (LFN_LAST if sequence == len(chunks) else 0)
+        entries.append(lfn_entry(marker, values, checksum))
+    return list(reversed(entries))
+
+
 def dir_entry(name: str, attr: int, cluster: int, size: int) -> bytes:
     entry = bytearray(32)
     entry[0:11] = short_name(name)
@@ -38,6 +112,23 @@ def dir_entry(name: str, attr: int, cluster: int, size: int) -> bytes:
     struct.pack_into("<H", entry, 26, cluster)
     struct.pack_into("<I", entry, 28, size)
     return bytes(entry)
+
+
+def directory_record(name: str, attr: int, cluster: int, size: int, used_short_names: set[bytes]) -> bytes:
+    if is_short_name(name):
+        short = short_name(name)
+        if short not in used_short_names:
+            used_short_names.add(short)
+            return dir_entry(name, attr, cluster, size)
+    else:
+        short = make_short_alias(name, used_short_names)
+    used_short_names.add(short)
+    entry = bytearray(32)
+    entry[0:11] = short
+    entry[11] = attr
+    struct.pack_into("<H", entry, 26, cluster)
+    struct.pack_into("<I", entry, 28, size)
+    return b"".join(lfn_entries(name, short)) + bytes(entry)
 
 
 def dot_entry(name: str, cluster: int) -> bytes:
@@ -115,17 +206,20 @@ class ImageBuilder:
         if self_cluster == -1:
             self_cluster = self.reserve_cluster()
         entries: list[bytes] = []
+        used_short_names: set[bytes] = set()
         if self_cluster != 0:
             entries.append(dot_entry(".", self_cluster))
             entries.append(dot_entry("..", parent_cluster))
+            used_short_names.add(b".          ")
+            used_short_names.add(b"..         ")
         for child in sorted(path.iterdir(), key=lambda p: (not p.is_dir(), p.name.upper())):
             if child.is_dir():
                 cluster, _ = self.build_directory(child, -1, self_cluster)
-                entries.append(dir_entry(child.name, 0x10, cluster, 0))
+                entries.append(directory_record(child.name, 0x10, cluster, 0, used_short_names))
             elif child.is_file():
                 data = child.read_bytes()
                 cluster = self.allocate_chain(data)
-                entries.append(dir_entry(child.name, 0x20, cluster, len(data)))
+                entries.append(directory_record(child.name, 0x20, cluster, len(data), used_short_names))
         directory = b"".join(entries)
         directory = directory + b"\0" * ((BYTES_PER_SECTOR * SECTORS_PER_CLUSTER) - len(directory) % (BYTES_PER_SECTOR * SECTORS_PER_CLUSTER))
         self.write_chain(self_cluster, directory)
@@ -167,14 +261,15 @@ class ImageBuilder:
     def build(self) -> None:
         self.write_boot_sector()
         root_entries: list[bytes] = []
+        used_short_names: set[bytes] = set()
         for child in sorted(self.source.iterdir(), key=lambda p: (not p.is_dir(), p.name.upper())):
             if child.is_dir():
                 cluster, _ = self.build_directory(child, -1, 0)
-                root_entries.append(dir_entry(child.name, 0x10, cluster, 0))
+                root_entries.append(directory_record(child.name, 0x10, cluster, 0, used_short_names))
             elif child.is_file():
                 data = child.read_bytes()
                 cluster = self.allocate_chain(data)
-                root_entries.append(dir_entry(child.name, 0x20, cluster, len(data)))
+                root_entries.append(directory_record(child.name, 0x20, cluster, len(data), used_short_names))
         root = b"".join(root_entries).ljust(self.root_dir_sectors * BYTES_PER_SECTOR, b"\0")
         start = self.root_sector * BYTES_PER_SECTOR
         self.image[start:start + len(root)] = root

@@ -37,6 +37,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\pwd.elf", "/bin/pwd.elf"},
     {L"\\bin\\env.elf", "/bin/env.elf"},
     {L"\\bin\\sysinfo.elf", "/bin/sysinfo.elf"},
+    {L"\\bin\\fastfetch.elf", "/bin/fastfetch.elf"},
     {L"\\bin\\id.elf", "/bin/id.elf"},
     {L"\\bin\\ids.elf", "/bin/ids.elf"},
     {L"\\bin\\ctx.elf", "/bin/ctx.elf"},
