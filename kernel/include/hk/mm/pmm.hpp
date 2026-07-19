@@ -40,6 +40,7 @@ public:
     uint64_t free_pages() const { return free_pages_; }
     MemoryStats stats() const { return stats_; }
     PhysicalMemoryDiagnostics diagnostics() const { return diagnostics_; }
+    uint64_t free_run_count(uint64_t order) const;
 private:
     static constexpr uint64_t kMaxPages = 1024 * 1024;
     uint8_t bitmap_[kMaxPages / 8]{};

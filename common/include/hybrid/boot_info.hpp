@@ -10,7 +10,7 @@ constexpr uint32_t kBootInfoVersion = 2;
 constexpr uint32_t kBootFlagRunBootScript = 1u << 0;
 constexpr uint32_t kBootFlagRecovery = 1u << 1;
 constexpr uint32_t kBootFlagDebug = 1u << 2;
-constexpr uint64_t kMaxBootModules = 128;
+constexpr uint64_t kMaxBootModules = 160;
 
 enum class MemoryType : uint32_t {
     Reserved = 0,

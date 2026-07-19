@@ -193,4 +193,22 @@ void PhysicalMemoryManager::mark_range_free(uint64_t base, uint64_t length) {
     stats_.used_pages = total_pages_ - free_pages_;
 }
 
+uint64_t PhysicalMemoryManager::free_run_count(uint64_t order) const {
+    hk::sync::LockGuard guard(pmm_lock);
+    if (order > 20) return 0;
+    const uint64_t block_pages = 1ull << order;
+    uint64_t count = 0;
+    uint64_t run = 0;
+    for (uint64_t page = 0x100; page < total_pages_; ++page) {
+        if (!is_used(page)) {
+            ++run;
+            continue;
+        }
+        count += run / block_pages;
+        run = 0;
+    }
+    count += run / block_pages;
+    return count;
+}
+
 } // namespace hk::mm

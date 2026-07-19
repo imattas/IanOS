@@ -1235,6 +1235,23 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_char(out, capacity, cursor, '\n');
         break;
     }
+    case VirtualFileKind::ProcBuddyinfo: {
+        auto& pmm = hk::mm::pmm();
+        const auto mem = pmm.stats();
+        append_text(out, capacity, cursor, "Node 0, zone Normal");
+        for (uint64_t order = 0; order <= 10; ++order) {
+            append_char(out, capacity, cursor, ' ');
+            append_decimal(out, capacity, cursor, pmm.free_run_count(order));
+        }
+        append_text(out, capacity, cursor, "\n# page_size ");
+        append_decimal(out, capacity, cursor, hk::mm::kPageSize);
+        append_text(out, capacity, cursor, "\n# total_pages ");
+        append_decimal(out, capacity, cursor, mem.total_pages);
+        append_text(out, capacity, cursor, "\n# free_pages ");
+        append_decimal(out, capacity, cursor, mem.free_pages);
+        append_text(out, capacity, cursor, "\n# bitmap_allocator 1\n");
+        break;
+    }
     case VirtualFileKind::ProcNetSummary: {
         const auto& adapter = hk::drivers::e1000::driver().adapter();
         append_text(out, capacity, cursor, "interfaces ");
@@ -1719,6 +1736,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/cpu/summary", VirtualFileKind::ProcCpuSummary);
     register_virtual_file("/proc/cpu/topology", VirtualFileKind::ProcCpuTopology);
     register_virtual_file("/proc/mm/summary", VirtualFileKind::ProcMmSummary);
+    register_virtual_file("/proc/buddyinfo", VirtualFileKind::ProcBuddyinfo);
     register_virtual_file("/proc/kmsg", VirtualFileKind::ProcKmsg);
     register_virtual_file("/proc/net/summary", VirtualFileKind::ProcNetSummary);
     register_virtual_file("/proc/net/dev", VirtualFileKind::ProcNetDev);
@@ -2497,6 +2515,7 @@ bool self_test() {
     const Node* proc_cpu_topology = vfs().find("/proc/cpu/topology");
     const Node* proc_mm = vfs().find("/proc/mm");
     const Node* proc_mm_summary = vfs().find("/proc/mm/summary");
+    const Node* proc_buddyinfo = vfs().find("/proc/buddyinfo");
     const Node* proc_kmsg = vfs().find("/proc/kmsg");
     const Node* proc_net = vfs().find("/proc/net");
     const Node* proc_net_summary = vfs().find("/proc/net/summary");
@@ -2555,6 +2574,7 @@ bool self_test() {
         !proc_cpu_summary || proc_cpu_summary->type != NodeType::VirtualFile || proc_cpu_summary->virtual_kind != VirtualFileKind::ProcCpuSummary ||
         !proc_cpu_topology || proc_cpu_topology->type != NodeType::VirtualFile || proc_cpu_topology->virtual_kind != VirtualFileKind::ProcCpuTopology ||
         !proc_mm_summary || proc_mm_summary->type != NodeType::VirtualFile || proc_mm_summary->virtual_kind != VirtualFileKind::ProcMmSummary ||
+        !proc_buddyinfo || proc_buddyinfo->type != NodeType::VirtualFile || proc_buddyinfo->virtual_kind != VirtualFileKind::ProcBuddyinfo ||
         !proc_kmsg || proc_kmsg->type != NodeType::VirtualFile || proc_kmsg->virtual_kind != VirtualFileKind::ProcKmsg ||
         !proc_net_summary || proc_net_summary->type != NodeType::VirtualFile || proc_net_summary->virtual_kind != VirtualFileKind::ProcNetSummary ||
         !proc_net_dev || proc_net_dev->type != NodeType::VirtualFile || proc_net_dev->virtual_kind != VirtualFileKind::ProcNetDev ||
@@ -2604,6 +2624,8 @@ bool self_test() {
         proc_buffer[0] != 'C' || proc_buffer[6] != 'I') return false;
     if (vfs().read("/proc/mm/summary", 0, proc_buffer, 9) != 9 ||
         proc_buffer[0] != 'p' || proc_buffer[4] != 't') return false;
+    if (vfs().read("/proc/buddyinfo", 0, proc_buffer, 6) != 6 ||
+        proc_buffer[0] != 'N' || proc_buffer[5] != '0') return false;
     if (vfs().read("/proc/kmsg", 0, proc_buffer, 7) != 7) return false;
     if (vfs().read("/proc/net/summary", 0, proc_buffer, 10) != 10 ||
         proc_buffer[0] != 'i' || proc_buffer[9] != 's') return false;
