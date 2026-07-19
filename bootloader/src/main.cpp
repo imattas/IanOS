@@ -123,6 +123,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\fbset.elf", "/bin/fbset.elf"},
     {L"\\bin\\lspci.elf", "/bin/lspci.elf"},
     {L"\\bin\\irqstat.elf", "/bin/irqstat.elf"},
+    {L"\\bin\\mmstat.elf", "/bin/mmstat.elf"},
     {L"\\bin\\pipeinfo.elf", "/bin/pipeinfo.elf"},
     {L"\\bin\\kill.elf", "/bin/kill.elf"},
     {L"\\bin\\killall.elf", "/bin/killall.elf"},
