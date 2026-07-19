@@ -84,6 +84,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\rev.elf", "/bin/rev.elf"},
     {L"\\bin\\seq.elf", "/bin/seq.elf"},
     {L"\\bin\\expr.elf", "/bin/expr.elf"},
+    {L"\\bin\\xargs.elf", "/bin/xargs.elf"},
     {L"\\bin\\sh.elf", "/bin/sh.elf"},
     {L"\\bin\\duptest.elf", "/bin/duptest.elf"},
     {L"\\bin\\fds.elf", "/bin/fds.elf"},
