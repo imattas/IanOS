@@ -117,6 +117,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\kill.elf", "/bin/kill.elf"},
     {L"\\bin\\killall.elf", "/bin/killall.elf"},
     {L"\\bin\\pgrep.elf", "/bin/pgrep.elf"},
+    {L"\\bin\\pidof.elf", "/bin/pidof.elf"},
     {L"\\bin\\nproc.elf", "/bin/nproc.elf"},
     {L"\\bin\\uyield.elf", "/bin/uyield.elf"},
     {L"\\bin\\ubusy.elf", "/bin/ubusy.elf"},
