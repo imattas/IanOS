@@ -12,6 +12,7 @@ enum class VirtualFileKind : uint8_t {
     None,
     ProcMeminfo,
     ProcUptime,
+    ProcLoadavg,
     ProcStat,
     ProcProcesses,
     ProcSelfStatus,

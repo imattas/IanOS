@@ -604,6 +604,25 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_decimal(out, capacity, cursor, hk::timer::ticks());
         append_char(out, capacity, cursor, '\n');
         break;
+    case VirtualFileKind::ProcLoadavg: {
+        auto& manager = hk::userspace::userspace_manager();
+        uint64_t runnable = manager.runnable_thread_count();
+        uint64_t live = manager.live_process_count();
+        uint64_t total = manager.process_count();
+        for (uint32_t i = 0; i < 3; ++i) {
+            if (i != 0) append_char(out, capacity, cursor, ' ');
+            append_decimal(out, capacity, cursor, runnable);
+            append_text(out, capacity, cursor, ".00");
+        }
+        append_char(out, capacity, cursor, ' ');
+        append_decimal(out, capacity, cursor, runnable);
+        append_char(out, capacity, cursor, '/');
+        append_decimal(out, capacity, cursor, live);
+        append_char(out, capacity, cursor, ' ');
+        append_decimal(out, capacity, cursor, total);
+        append_char(out, capacity, cursor, '\n');
+        break;
+    }
     case VirtualFileKind::ProcStat: {
         auto& scheduler = hk::sched::scheduler();
         auto& manager = hk::userspace::userspace_manager();
@@ -1635,6 +1654,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_memory_file("/proc/cpuinfo", reinterpret_cast<uint64_t>(kProcCpuInfo), sizeof(kProcCpuInfo) - 1);
     register_virtual_file("/proc/meminfo", VirtualFileKind::ProcMeminfo);
     register_virtual_file("/proc/uptime", VirtualFileKind::ProcUptime);
+    register_virtual_file("/proc/loadavg", VirtualFileKind::ProcLoadavg);
     register_virtual_file("/proc/stat", VirtualFileKind::ProcStat);
     register_virtual_file("/proc/processes", VirtualFileKind::ProcProcesses);
     register_virtual_file("/proc/modules", VirtualFileKind::ProcModules);
@@ -2437,6 +2457,7 @@ bool self_test() {
     const Node* proc_self = vfs().find("/proc/self");
     const Node* proc_meminfo = vfs().find("/proc/meminfo");
     const Node* proc_uptime = vfs().find("/proc/uptime");
+    const Node* proc_loadavg = vfs().find("/proc/loadavg");
     const Node* proc_stat = vfs().find("/proc/stat");
     const Node* proc_processes = vfs().find("/proc/processes");
     const Node* proc_modules = vfs().find("/proc/modules");
@@ -2467,6 +2488,7 @@ bool self_test() {
         !proc_sys_kernel || proc_sys_kernel->type != NodeType::Directory) return false;
     if (!proc_meminfo || proc_meminfo->type != NodeType::VirtualFile || proc_meminfo->virtual_kind != VirtualFileKind::ProcMeminfo ||
         !proc_uptime || proc_uptime->type != NodeType::VirtualFile || proc_uptime->virtual_kind != VirtualFileKind::ProcUptime ||
+        !proc_loadavg || proc_loadavg->type != NodeType::VirtualFile || proc_loadavg->virtual_kind != VirtualFileKind::ProcLoadavg ||
         !proc_stat || proc_stat->type != NodeType::VirtualFile || proc_stat->virtual_kind != VirtualFileKind::ProcStat ||
         !proc_processes || proc_processes->type != NodeType::VirtualFile || proc_processes->virtual_kind != VirtualFileKind::ProcProcesses ||
         !proc_modules || proc_modules->type != NodeType::VirtualFile || proc_modules->virtual_kind != VirtualFileKind::ProcModules ||
@@ -2503,6 +2525,7 @@ bool self_test() {
     char uptime_buffer[8];
     if (vfs().read_handle(proc_handle, uptime_buffer, 6) != 6 || uptime_buffer[0] != 't' || uptime_buffer[5] != ' ') return false;
     if (!vfs().close(proc_handle)) return false;
+    if (vfs().read("/proc/loadavg", 0, proc_buffer, 4) != 4 || proc_buffer[1] != '.' || proc_buffer[2] != '0') return false;
     if (vfs().read("/proc/processes", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'P' || proc_buffer[4] != 'P') return false;
     if (vfs().read("/proc/modules", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'N' || proc_buffer[5] != 'S') return false;
     if (vfs().read("/proc/stat", 0, proc_buffer, 4) != 4 || proc_buffer[0] != 'c' || proc_buffer[3] != ' ') return false;
@@ -2603,6 +2626,8 @@ bool self_test() {
     if (!dmesg || dmesg->type != NodeType::MemoryFile || dmesg->size < 4) return false;
     const Node* kmsg = vfs().find("/bin/kmsg.elf");
     if (!kmsg || kmsg->type != NodeType::MemoryFile || kmsg->size < 4) return false;
+    const Node* loadavg = vfs().find("/bin/loadavg.elf");
+    if (!loadavg || loadavg->type != NodeType::MemoryFile || loadavg->size < 4) return false;
     const Node* ps = vfs().find("/bin/ps.elf");
     if (!ps || ps->type != NodeType::MemoryFile || ps->size < 4) return false;
     const Node* pwd = vfs().find("/bin/pwd.elf");
