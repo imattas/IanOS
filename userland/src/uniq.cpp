@@ -29,6 +29,18 @@ bool eof_result(const hybrid::SyscallResult& result) {
     return result.value == 0 && (result.error == hybrid::kSyscallErrorNone || result.error == hybrid::kSyscallErrorNotFound);
 }
 
+enum class FilterMode {
+    All,
+    RepeatedOnly,
+    UniqueOnly,
+};
+
+bool should_emit(FilterMode filter, uint64_t repeat_count) {
+    if (filter == FilterMode::RepeatedOnly) return repeat_count > 1;
+    if (filter == FilterMode::UniqueOnly) return repeat_count == 1;
+    return true;
+}
+
 void emit_plain(const char* line, uint64_t& emitted) {
     hybrid::user::write_text("[uniq] ");
     hybrid::user::write_line(line);
@@ -43,35 +55,54 @@ void emit_counted(const char* line, uint64_t repeat_count, uint64_t& emitted) {
     ++emitted;
 }
 
-void flush_pending(bool count_mode, bool& have_last, char (&last)[64], uint64_t& repeat_count, uint64_t& emitted) {
+void flush_pending(bool count_mode, FilterMode filter, bool& have_last, char (&last)[64], uint64_t& repeat_count, uint64_t& emitted) {
     if (!have_last) return;
-    if (count_mode) emit_counted(last, repeat_count, emitted);
-    else emit_plain(last, emitted);
+    if (should_emit(filter, repeat_count)) {
+        if (count_mode) emit_counted(last, repeat_count, emitted);
+        else emit_plain(last, emitted);
+    }
     have_last = false;
     repeat_count = 0;
 }
 
-void handle_line(const char* line, bool count_mode, bool& have_last, char (&last)[64], uint64_t& repeat_count, uint64_t& emitted) {
+void handle_line(const char* line, bool count_mode, FilterMode filter, bool& have_last, char (&last)[64], uint64_t& repeat_count, uint64_t& emitted) {
     if (have_last && streq(line, last)) {
         ++repeat_count;
         return;
     }
-    flush_pending(count_mode, have_last, last, repeat_count, emitted);
+    flush_pending(count_mode, filter, have_last, last, repeat_count, emitted);
     copy_line(last, line, hybrid::user::strlen(line));
     have_last = true;
     repeat_count = 1;
+}
+
+bool parse_option(const char* value, bool& count_mode, FilterMode& filter) {
+    if (streq(value, "-c")) {
+        count_mode = true;
+        return true;
+    }
+    if (streq(value, "-d")) {
+        filter = FilterMode::RepeatedOnly;
+        return true;
+    }
+    if (streq(value, "-u")) {
+        filter = FilterMode::UniqueOnly;
+        return true;
+    }
+    return false;
 }
 
 }
 
 extern "C" [[noreturn]] void _start() {
     hybrid::ArgumentInfo path;
-    hybrid::ArgumentInfo first;
+    hybrid::ArgumentInfo option;
     bool count_mode = false;
+    FilterMode filter = FilterMode::All;
     uint64_t path_index = 1;
-    if (get_arg(1, first) && streq(first.value, "-c")) {
-        count_mode = true;
-        path_index = 2;
+    for (; path_index < 8; ++path_index) {
+        if (!get_arg(path_index, option)) break;
+        if (!parse_option(option.value, count_mode, filter)) break;
     }
     uint64_t fd = hybrid::kStdinFd;
     bool close_when_done = false;
@@ -108,7 +139,7 @@ extern "C" [[noreturn]] void _start() {
             if (c == '\r') continue;
             if (c == '\n') {
                 line[line_len] = 0;
-                handle_line(line, count_mode, have_last, last, repeat_count, emitted);
+                handle_line(line, count_mode, filter, have_last, last, repeat_count, emitted);
                 line_len = 0;
             } else if (line_len + 1 < sizeof(line)) {
                 line[line_len++] = c;
@@ -117,9 +148,9 @@ extern "C" [[noreturn]] void _start() {
     }
     if (line_len != 0) {
         line[line_len] = 0;
-        handle_line(line, count_mode, have_last, last, repeat_count, emitted);
+        handle_line(line, count_mode, filter, have_last, last, repeat_count, emitted);
     }
-    flush_pending(count_mode, have_last, last, repeat_count, emitted);
+    flush_pending(count_mode, filter, have_last, last, repeat_count, emitted);
     hybrid::user::write_hex_line("[uniq] ", "lines ", emitted);
     if (close_when_done) hybrid::user::syscall(hybrid::SyscallNumber::Close, fd);
     hybrid::user::exit(emitted);

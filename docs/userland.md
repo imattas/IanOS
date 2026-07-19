@@ -267,7 +267,8 @@ filesystem manipulation programs: `touch`, `append`, `rm`, `cp`, `mv`, `ln`, `tr
 `grep`, `mkdir`, `rmdir`, `stat`, `whoami`, `hostname`, `id`, `basename`, `dirname`, `head`,
 `tail`, `test`, `sort`, `uniq`, `/bin/find.elf`, `/bin/hexdump.elf`, `/bin/od.elf`, `/bin/which.elf`, `/bin/printenv.elf`, `/bin/cal.elf`, `/bin/readelf.elf`, `/bin/file.elf`, `/bin/sha256sum.elf`, `/bin/cksum.elf`, `/bin/fold.elf`, `/bin/printf.elf`, `/bin/dd.elf`, `/bin/xargs.elf`, `/bin/yes.elf`, `/bin/cmp.elf`, `/bin/strings.elf`, `/bin/nl.elf`, `/bin/tr.elf`, `/bin/sed.elf`, `/bin/cut.elf`, `/bin/paste.elf`, `/bin/rev.elf`, `/bin/tac.elf`, `/bin/seq.elf`, `/bin/expr.elf`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/realpath.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
 separately to stdout and stderr. `uniq` supports adjacent duplicate
-suppression plus `-c` count-prefix mode for each emitted run. Built-in and external `stat` report normalized
+suppression plus `-c` count-prefix, `-d` duplicate-only, and `-u`
+unique-only modes over each emitted run. Built-in and external `stat` report normalized
 path, type, size, link count, and VFS flags. `/bin/ln.elf` creates hard links
 between writable RAM-backed files; the boot proof links `/tmp/osrel2` to
 `/tmp/osrel.link`, verifies both names report link count `2`, writes through

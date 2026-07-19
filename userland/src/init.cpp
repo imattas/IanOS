@@ -2645,6 +2645,8 @@ void run_boot_shell_script() {
     run_command("sort", "/tmp/words");
     run_command("uniq", "/tmp/words");
     run_command("uniq", "-c /tmp/words");
+    run_command("uniq", "-d /tmp/words");
+    run_command("uniq", "-u /tmp/words");
     run_command("/bin/find.elf", "/proc/sys");
     run_command("/bin/find.elf", "/mnt/boot/bin");
     run_command("touch", "/tmp/script");
