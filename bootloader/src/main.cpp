@@ -97,6 +97,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\fdinh.elf", "/bin/fdinh.elf"},
     {L"\\bin\\ln.elf", "/bin/ln.elf"},
     {L"\\bin\\readlink.elf", "/bin/readlink.elf"},
+    {L"\\bin\\realpath.elf", "/bin/realpath.elf"},
     {L"\\bin\\truncate.elf", "/bin/truncate.elf"},
     {L"\\bin\\blk.elf", "/bin/blk.elf"},
     {L"\\bin\\mount.elf", "/bin/mount.elf"},

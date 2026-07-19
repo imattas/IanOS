@@ -53,7 +53,7 @@ The verifier performs the following gates:
   `/proc/sys/kernel/osrelease`, `/proc/sys/kernel/version`,
   `/proc/self/status`, `/proc/self/fd`, `/proc/1/status`, and `/proc/1/fd` virtual-file metadata
   and reads, default `/dev/tty` fd 0/1/2 process descriptors,
-  `/proc/self/fd/1` readlink resolution under stdout redirection,
+  `/proc/self/fd/1` readlink and realpath resolution under stdout redirection,
   `/dev/null`, `/dev/zero`, `/dev/tty`, and `/dev/console` character-device
   metadata plus bounded `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`,
   and `/bin/ttyread.elf` input-mode, read/write, mode-switch, canonical stdin,
