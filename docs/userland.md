@@ -217,8 +217,8 @@ stable identity files.
 order through process-local descriptors and streaming text files to stdout.
 `/bin/wc.elf` also accepts stdin or one or more path arguments, prints per-path
 byte, line, and word counts, and prints an aggregate `total` row for multiple
-paths. `/bin/head.elf` accepts the default three-line mode plus `-n count`
-or `-ncount` to bound output from a path or inherited stdin.
+paths. `/bin/head.elf` and `/bin/tail.elf` accept the default three-line mode
+plus `-n count` or `-ncount` to bound output from a path or inherited stdin.
 `/bin/cksum.elf` computes CRC32 over descriptor-backed streams, boot-proven
 against `/etc/hostname`.
 `/bin/fold.elf` wraps descriptor-backed text at a bounded column width and is
