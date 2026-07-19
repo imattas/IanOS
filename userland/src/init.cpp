@@ -466,7 +466,7 @@ const char* history_at(uint64_t view) {
 
 void command_help(const char*) {
     shell_line("", "commands: help clear history exit echo status pid ids fgpgid ctx argv env export unset which stat counts spawn jobs fg bg stop usched nextuser uyielddemo upreemptdemo run kill wait reap pwd cd ls cat sh fds ps mem cpus devices fb ticks");
-    shell_line("", "external: hello args cat ls uname hostname free uptime date cal dmesg ps pwd env printenv sysinfo fastfetch sysctl id ids groups ctx echo sleep true false touch append rm cp mv dd wc grep tee mkdir rmdir err stat statfs file lsattr namei tree whoami basename dirname head tail test sort uniq find hexdump readelf sha256sum sha224sum sha512sum sha384sum sha1sum md5sum cmp cksum fold printf strings nl tr sed cut paste rev tac seq expr xargs yes od base64 which sh duptest fds lsof fdinh ln readlink realpath truncate blk mount df du lsblk findmnt pipeinfo kill killall pgrep pidof nproc lscpu schedstat vmstat top pstree uyield ubusy slowcat burst loop devio tty stty ttyread clear");
+    shell_line("", "external: hello args cat ls uname hostname free uptime date cal dmesg ps pwd env printenv sysinfo fastfetch sysctl id ids groups ctx echo sleep true false touch append rm cp mv dd wc grep tee mkdir rmdir err stat statfs file lsattr namei tree whoami basename dirname head tail test sort uniq find hexdump readelf sha256sum sha224sum sha512sum sha384sum sha1sum md5sum cmp cksum fold printf strings nl tr sed cut paste rev tac seq expr xargs yes od base64 which sh duptest fds lsof fdinh ln readlink realpath truncate blk mount df du lsblk findmnt iostat pipeinfo kill killall pgrep pidof nproc lscpu schedstat vmstat top pstree uyield ubusy slowcat burst loop devio tty stty ttyread clear");
     shell_line("", "editing: arrows history home end delete tab pageup/pagedown scrollback ctrl-c ctrl-z jobs %n %+ wait -n");
 }
 
@@ -1647,7 +1647,7 @@ const ShellCommand kCommands[] = {
 const char* const kExternalCommands[] = {
     "hello", "args", "cat", "ls", "uname", "hostname", "free", "uptime", "date", "cal", "dmesg", "ps", "pwd", "env",
     "sysinfo", "fastfetch", "sysctl", "id", "ids", "groups", "ctx", "echo", "sleep", "true", "false", "touch", "append", "rm", "cp", "mv", "dd", "wc", "grep", "tee", "mkdir", "rmdir", "err", "printenv",
-    "stat", "statfs", "file", "lsattr", "namei", "tree", "whoami", "basename", "dirname", "head", "tail", "test", "sort", "uniq", "find", "hexdump", "readelf", "sha256sum", "sha224sum", "sha512sum", "sha384sum", "sha1sum", "md5sum", "cmp", "cksum", "fold", "printf", "strings", "nl", "tr", "sed", "cut", "paste", "rev", "tac", "seq", "expr", "xargs", "yes", "od", "base64", "which", "sh", "duptest", "fds", "lsof", "fdinh", "ln", "readlink", "realpath", "truncate", "blk", "mount", "df", "du", "lsblk", "findmnt", "pipeinfo", "kill", "killall", "pgrep", "pidof", "nproc", "lscpu", "schedstat", "vmstat", "top", "pstree", "uyield", "ubusy", "slowcat", "burst", "loop", "devio", "tty", "stty", "ttyread", "clear",
+    "stat", "statfs", "file", "lsattr", "namei", "tree", "whoami", "basename", "dirname", "head", "tail", "test", "sort", "uniq", "find", "hexdump", "readelf", "sha256sum", "sha224sum", "sha512sum", "sha384sum", "sha1sum", "md5sum", "cmp", "cksum", "fold", "printf", "strings", "nl", "tr", "sed", "cut", "paste", "rev", "tac", "seq", "expr", "xargs", "yes", "od", "base64", "which", "sh", "duptest", "fds", "lsof", "fdinh", "ln", "readlink", "realpath", "truncate", "blk", "mount", "df", "du", "lsblk", "findmnt", "iostat", "pipeinfo", "kill", "killall", "pgrep", "pidof", "nproc", "lscpu", "schedstat", "vmstat", "top", "pstree", "uyield", "ubusy", "slowcat", "burst", "loop", "devio", "tty", "stty", "ttyread", "clear",
 };
 
 bool starts_with(const char* text, const char* prefix) {
@@ -2609,6 +2609,7 @@ void run_boot_shell_script() {
     run_command("/bin/lsblk.elf");
     run_command("/bin/findmnt.elf");
     run_command("/bin/findmnt.elf", "/mnt/boot");
+    run_command("/bin/iostat.elf");
     run_command("/bin/pipeinfo.elf");
     char external_kill_loop[32];
     copy_text(external_kill_loop, sizeof(external_kill_loop), "loop &");
