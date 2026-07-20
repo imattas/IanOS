@@ -258,6 +258,9 @@ is visible through one command and validated across both ABI paths.
 `/bin/limits.elf` reads the kernel limit ABI and reports fixed capacities for
 boot modules, VFS tables, process descriptors, pipes, CPU slots, PMM bitmap
 coverage, and boot FAT path tracking alongside selected live counts.
+`/bin/imginfo.elf` inspects the `/mnt/boot` FAT mount from userspace, reporting
+mounted payload bytes, node count, boot module count, and key boot artifact
+sizes so image contents can be distinguished from the fixed host disk image.
 `/bin/kmsg.elf` reads `/proc/kmsg` through ordinary VFS open/read syscalls and
 streams the retained kernel ring buffer with byte and line counters, while
 `/bin/dmesg.elf` continues to exercise the direct kernel-log syscall.
