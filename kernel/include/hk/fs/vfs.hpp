@@ -68,6 +68,8 @@ enum class VirtualFileKind : uint8_t {
     ProcOsrelease,
     ProcPidMax,
     ProcThreadsMax,
+    ProcCpuCount,
+    ProcOnlineCpuCount,
     ProcBootMode,
     ProcBootFlags,
     ProcBootOptions,

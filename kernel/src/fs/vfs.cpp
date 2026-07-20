@@ -2626,6 +2626,14 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_decimal(out, capacity, cursor, hk::userspace::kMaxUserThreads);
         append_char(out, capacity, cursor, '\n');
         break;
+    case VirtualFileKind::ProcCpuCount:
+        append_decimal(out, capacity, cursor, hk::cpu::topology().cpu_count());
+        append_char(out, capacity, cursor, '\n');
+        break;
+    case VirtualFileKind::ProcOnlineCpuCount:
+        append_decimal(out, capacity, cursor, hk::cpu::topology().online_count());
+        append_char(out, capacity, cursor, '\n');
+        break;
     case VirtualFileKind::ProcBootMode:
         append_text(out, capacity, cursor, boot_mode_name());
         append_char(out, capacity, cursor, '\n');
@@ -3071,6 +3079,8 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/sys/kernel/osrelease", VirtualFileKind::ProcOsrelease);
     register_virtual_file("/proc/sys/kernel/pid_max", VirtualFileKind::ProcPidMax);
     register_virtual_file("/proc/sys/kernel/threads-max", VirtualFileKind::ProcThreadsMax);
+    register_virtual_file("/proc/sys/kernel/cpus", VirtualFileKind::ProcCpuCount);
+    register_virtual_file("/proc/sys/kernel/online_cpus", VirtualFileKind::ProcOnlineCpuCount);
     register_virtual_file("/proc/sys/kernel/boot_mode", VirtualFileKind::ProcBootMode);
     register_virtual_file("/proc/sys/kernel/boot_flags", VirtualFileKind::ProcBootFlags);
     register_virtual_file("/proc/sys/kernel/boot_options", VirtualFileKind::ProcBootOptions);
@@ -3993,6 +4003,8 @@ bool self_test() {
     const Node* proc_osrelease = vfs().find("/proc/sys/kernel/osrelease");
     const Node* proc_pid_max = vfs().find("/proc/sys/kernel/pid_max");
     const Node* proc_threads_max = vfs().find("/proc/sys/kernel/threads-max");
+    const Node* proc_cpu_count = vfs().find("/proc/sys/kernel/cpus");
+    const Node* proc_online_cpu_count = vfs().find("/proc/sys/kernel/online_cpus");
     const Node* proc_boot_mode = vfs().find("/proc/sys/kernel/boot_mode");
     const Node* proc_boot_flags = vfs().find("/proc/sys/kernel/boot_flags");
     const Node* proc_boot_options = vfs().find("/proc/sys/kernel/boot_options");
@@ -4071,6 +4083,8 @@ bool self_test() {
         !proc_osrelease || proc_osrelease->type != NodeType::VirtualFile || proc_osrelease->virtual_kind != VirtualFileKind::ProcOsrelease ||
         !proc_pid_max || proc_pid_max->type != NodeType::VirtualFile || proc_pid_max->virtual_kind != VirtualFileKind::ProcPidMax ||
         !proc_threads_max || proc_threads_max->type != NodeType::VirtualFile || proc_threads_max->virtual_kind != VirtualFileKind::ProcThreadsMax ||
+        !proc_cpu_count || proc_cpu_count->type != NodeType::VirtualFile || proc_cpu_count->virtual_kind != VirtualFileKind::ProcCpuCount ||
+        !proc_online_cpu_count || proc_online_cpu_count->type != NodeType::VirtualFile || proc_online_cpu_count->virtual_kind != VirtualFileKind::ProcOnlineCpuCount ||
         !proc_boot_mode || proc_boot_mode->type != NodeType::VirtualFile || proc_boot_mode->virtual_kind != VirtualFileKind::ProcBootMode ||
         !proc_boot_flags || proc_boot_flags->type != NodeType::VirtualFile || proc_boot_flags->virtual_kind != VirtualFileKind::ProcBootFlags ||
         !proc_boot_options || proc_boot_options->type != NodeType::VirtualFile || proc_boot_options->virtual_kind != VirtualFileKind::ProcBootOptions ||
@@ -4169,6 +4183,10 @@ bool self_test() {
         proc_buffer[0] != '1' || proc_buffer[1] != '6' || proc_buffer[2] != '\n') return false;
     if (vfs().read("/proc/sys/kernel/threads-max", 0, proc_buffer, 3) != 3 ||
         proc_buffer[0] != '3' || proc_buffer[1] != '2' || proc_buffer[2] != '\n') return false;
+    if (vfs().read("/proc/sys/kernel/cpus", 0, proc_buffer, 2) != 2 ||
+        proc_buffer[0] < '1' || proc_buffer[0] > '9' || proc_buffer[1] != '\n') return false;
+    if (vfs().read("/proc/sys/kernel/online_cpus", 0, proc_buffer, 2) != 2 ||
+        proc_buffer[0] < '1' || proc_buffer[0] > '9' || proc_buffer[1] != '\n') return false;
     if (vfs().read("/proc/sys/kernel/boot_mode", 0, proc_buffer, 5) != 5 ||
         proc_buffer[0] != 'u' || proc_buffer[1] != 'e' || proc_buffer[2] != 'f' || proc_buffer[3] != 'i' ||
         (proc_buffer[4] != '\n' && proc_buffer[4] != '-')) return false;
