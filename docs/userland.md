@@ -452,7 +452,8 @@ interrupt dispatch, vector, Local APIC timer, and user-preemption counters,
 counters, `/proc/net/summary` plus `/proc/net/dev` expose e1000 link and
 interface counters, and `/proc/cpu/summary` plus `/proc/cpu/topology` expose CPU startup,
 runtime, parked-AP, IPI-work, and TLB-shootdown counters.
-`/proc/modules` exposes the bootloader-provided module table, `/proc/kmsg`
+`/proc/modules` exposes the bootloader-provided module table, `/proc/cmdline`
+exposes the boot command line, `/proc/kmsg`
 exposes the retained kernel log ring through the VFS, and `/proc/fs/vfs`
 exposes RAM-backed VFS mutation counters. `/bin/hostname.elf` reads the
 rootfs file back as the system hostname. `/bin/id.elf` reports the fixed root uid/gid plus
