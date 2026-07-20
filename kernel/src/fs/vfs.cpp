@@ -67,6 +67,78 @@ struct Fat16Geometry {
     uint32_t data_sector;
 };
 
+struct KernelFeatureName {
+    uint64_t flag;
+    const char* name;
+};
+
+constexpr KernelFeatureName kKernelFeatures[] = {
+    {hybrid::KernelFeatureUefiBoot, "uefi_boot"},
+    {hybrid::KernelFeatureFramebufferConsole, "framebuffer_console"},
+    {hybrid::KernelFeatureSerialLog, "serial_log"},
+    {hybrid::KernelFeatureGdt, "gdt"},
+    {hybrid::KernelFeatureIdt, "idt"},
+    {hybrid::KernelFeatureSyscalls, "syscalls"},
+    {hybrid::KernelFeaturePmmBitmap, "pmm_bitmap"},
+    {hybrid::KernelFeatureVmmPageTables, "vmm_page_tables"},
+    {hybrid::KernelFeatureKernelHeap, "kernel_heap"},
+    {hybrid::KernelFeatureVfs, "vfs"},
+    {hybrid::KernelFeatureRamFs, "ramfs"},
+    {hybrid::KernelFeatureProcFs, "procfs"},
+    {hybrid::KernelFeatureDevFs, "devfs"},
+    {hybrid::KernelFeatureFat16Mount, "fat16_mount"},
+    {hybrid::KernelFeatureElfUserspace, "elf_userspace"},
+    {hybrid::KernelFeatureScheduler, "scheduler"},
+    {hybrid::KernelFeaturePreemption, "preemption"},
+    {hybrid::KernelFeaturePipes, "pipes"},
+    {hybrid::KernelFeatureJobControl, "job_control"},
+    {hybrid::KernelFeatureSmp, "smp"},
+    {hybrid::KernelFeatureLocalApic, "local_apic"},
+    {hybrid::KernelFeatureIoApic, "io_apic"},
+    {hybrid::KernelFeaturePci, "pci"},
+    {hybrid::KernelFeatureAhci, "ahci"},
+    {hybrid::KernelFeatureE1000, "e1000"},
+    {hybrid::KernelFeaturePs2Keyboard, "ps2_keyboard"},
+    {hybrid::KernelFeatureTtyScrollback, "tty_scrollback"},
+    {hybrid::KernelFeatureRecoveryMode, "recovery_mode"},
+    {hybrid::KernelFeatureDebugBoot, "debug_boot"},
+    {hybrid::KernelFeatureBlockCache, "block_cache"},
+};
+
+constexpr uint64_t kKernelStableFeatures =
+    hybrid::KernelFeatureUefiBoot |
+    hybrid::KernelFeatureFramebufferConsole |
+    hybrid::KernelFeatureSerialLog |
+    hybrid::KernelFeatureGdt |
+    hybrid::KernelFeatureIdt |
+    hybrid::KernelFeatureSyscalls |
+    hybrid::KernelFeaturePmmBitmap |
+    hybrid::KernelFeatureVmmPageTables |
+    hybrid::KernelFeatureKernelHeap |
+    hybrid::KernelFeatureVfs |
+    hybrid::KernelFeatureRamFs |
+    hybrid::KernelFeatureProcFs |
+    hybrid::KernelFeatureDevFs |
+    hybrid::KernelFeatureFat16Mount |
+    hybrid::KernelFeatureElfUserspace |
+    hybrid::KernelFeatureScheduler |
+    hybrid::KernelFeaturePreemption |
+    hybrid::KernelFeaturePipes |
+    hybrid::KernelFeatureJobControl |
+    hybrid::KernelFeatureSmp |
+    hybrid::KernelFeatureLocalApic |
+    hybrid::KernelFeatureIoApic |
+    hybrid::KernelFeaturePci |
+    hybrid::KernelFeatureAhci |
+    hybrid::KernelFeatureE1000 |
+    hybrid::KernelFeaturePs2Keyboard |
+    hybrid::KernelFeatureTtyScrollback |
+    hybrid::KernelFeatureRecoveryMode |
+    hybrid::KernelFeatureDebugBoot |
+    hybrid::KernelFeatureBlockCache;
+
+constexpr uint64_t kKernelStableFeatureCount = sizeof(kKernelFeatures) / sizeof(kKernelFeatures[0]);
+
 uint16_t read_le16(const unsigned char* bytes, uint32_t offset) {
     return static_cast<uint16_t>(bytes[offset] | (static_cast<uint16_t>(bytes[offset + 1]) << 8));
 }
@@ -1684,6 +1756,22 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         }
         break;
     }
+    case VirtualFileKind::ProcFeatures: {
+        append_text(out, capacity, cursor, "flags ");
+        append_hex(out, capacity, cursor, kKernelStableFeatures);
+        append_text(out, capacity, cursor, "\nexperimental ");
+        append_hex(out, capacity, cursor, 0);
+        append_text(out, capacity, cursor, "\nstable_count ");
+        append_decimal(out, capacity, cursor, kKernelStableFeatureCount);
+        append_text(out, capacity, cursor, "\nexperimental_count 0\n");
+        append_text(out, capacity, cursor, "STATE NAME\n");
+        for (uint64_t i = 0; i < kKernelStableFeatureCount; ++i) {
+            append_text(out, capacity, cursor, (kKernelStableFeatures & kKernelFeatures[i].flag) != 0 ? "on " : "off ");
+            append_text(out, capacity, cursor, kKernelFeatures[i].name);
+            append_char(out, capacity, cursor, '\n');
+        }
+        break;
+    }
     case VirtualFileKind::ProcBootinfo: {
         const auto& boot = hk::boot::retained_boot_info();
         append_text(out, capacity, cursor, "magic ");
@@ -2149,6 +2237,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/net/dev", VirtualFileKind::ProcNetDev);
     register_virtual_file("/proc/net/route", VirtualFileKind::ProcNetRoute);
     register_virtual_file("/proc/bootinfo", VirtualFileKind::ProcBootinfo);
+    register_virtual_file("/proc/features", VirtualFileKind::ProcFeatures);
     register_virtual_file("/proc/cmdline", VirtualFileKind::ProcCmdline);
     register_virtual_file("/proc/sys/kernel/hostname", VirtualFileKind::ProcHostname);
     register_virtual_file("/proc/sys/kernel/ostype", VirtualFileKind::ProcOstype);
@@ -2949,6 +3038,7 @@ bool self_test() {
     const Node* proc_fs = vfs().find("/proc/fs");
     const Node* proc_vfs = vfs().find("/proc/fs/vfs");
     const Node* proc_bootinfo = vfs().find("/proc/bootinfo");
+    const Node* proc_features = vfs().find("/proc/features");
     const Node* proc_cmdline = vfs().find("/proc/cmdline");
     const Node* proc_sys = vfs().find("/proc/sys");
     const Node* proc_sys_kernel = vfs().find("/proc/sys/kernel");
@@ -3005,6 +3095,7 @@ bool self_test() {
         !proc_net_dev || proc_net_dev->type != NodeType::VirtualFile || proc_net_dev->virtual_kind != VirtualFileKind::ProcNetDev ||
         !proc_net_route || proc_net_route->type != NodeType::VirtualFile || proc_net_route->virtual_kind != VirtualFileKind::ProcNetRoute ||
         !proc_bootinfo || proc_bootinfo->type != NodeType::VirtualFile || proc_bootinfo->virtual_kind != VirtualFileKind::ProcBootinfo ||
+        !proc_features || proc_features->type != NodeType::VirtualFile || proc_features->virtual_kind != VirtualFileKind::ProcFeatures ||
         !proc_cmdline || proc_cmdline->type != NodeType::VirtualFile || proc_cmdline->virtual_kind != VirtualFileKind::ProcCmdline ||
         !proc_hostname || proc_hostname->type != NodeType::VirtualFile || proc_hostname->virtual_kind != VirtualFileKind::ProcHostname ||
         !proc_ostype || proc_ostype->type != NodeType::VirtualFile || proc_ostype->virtual_kind != VirtualFileKind::ProcOstype ||
@@ -3028,6 +3119,7 @@ bool self_test() {
     if (vfs().read("/proc/processes", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'P' || proc_buffer[4] != 'P') return false;
     if (vfs().read("/proc/modules", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'N' || proc_buffer[5] != 'S') return false;
     if (vfs().read("/proc/bootinfo", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'm' || proc_buffer[5] != ' ') return false;
+    if (vfs().read("/proc/features", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'f' || proc_buffer[5] != ' ') return false;
     if (vfs().read("/proc/stat", 0, proc_buffer, 4) != 4 || proc_buffer[0] != 'c' || proc_buffer[3] != ' ') return false;
     if (vfs().read("/proc/mounts", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'b' || proc_buffer[5] != 'm') return false;
     if (vfs().read("/proc/filesystems", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'n' || proc_buffer[5] != '\t') return false;

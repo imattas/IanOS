@@ -2538,6 +2538,7 @@ void run_boot_shell_script() {
     run_command("/bin/cat.elf", "/proc/net/dev");
     run_command("/bin/cat.elf", "/proc/net/route");
     run_command("/bin/cat.elf", "/proc/bootinfo");
+    run_command("/bin/cat.elf", "/proc/features");
     run_command("/bin/cat.elf", "/proc/buddyinfo");
     run_command("/bin/cat.elf", "/proc/processes");
     run_command("/bin/cat.elf", "/proc/mounts");

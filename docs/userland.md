@@ -267,6 +267,9 @@ structure sizes so layout drift is visible from a normal user process.
 `/bin/features.elf` reads the kernel feature-info syscall and reports the
 stable subsystem capability bitmap plus named feature rows for boot, memory,
 VFS, userspace, scheduler, SMP/APIC, PCI/storage/network, and terminal support.
+The same stable feature set is also exposed as `/proc/features` so ordinary
+VFS reads can inspect kernel capability state without using the feature syscall
+directly.
 `/bin/kmsg.elf` reads `/proc/kmsg` through ordinary VFS open/read syscalls and
 streams the retained kernel ring buffer with byte and line counters, while
 `/bin/dmesg.elf` continues to exercise the direct kernel-log syscall.
