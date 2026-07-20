@@ -170,7 +170,7 @@ line into the terminal input discipline, reads it back through fd 0 backed by
 The boot proof also stats, lists, and reads generated `/proc/meminfo`,
 `/proc/iomem`, `/proc/buddyinfo`, `/proc/heapinfo`, `/proc/vmstat`, `/proc/uptime`, `/proc/loadavg`, `/proc/sched_debug`, `/proc/block/bootdisk`, `/proc/driver/summary`, `/proc/driver/devices`, `/proc/pci/summary`, `/proc/pci/devices`, `/proc/irq/summary`, `/proc/interrupts`, `/proc/tty/summary`, `/proc/cpu/summary`, `/proc/cpu/topology`, `/proc/processes`, `/proc/mounts`, `/proc/filesystems`,
 `/proc/fs/vfs`, `/proc/cmdline`, `/proc/stat`, `/proc/sys/kernel/hostname`, `/proc/sys/kernel/ostype`,
-`/proc/sys/kernel/osrelease`, `/proc/sys/kernel/boot_mode`, `/proc/sys/kernel/version`, `/proc/self/status`,
+`/proc/sys/kernel/osrelease`, `/proc/sys/kernel/boot_mode`, `/proc/sys/kernel/boot_flags`, `/proc/sys/kernel/version`, `/proc/self/status`,
 `/proc/self/stat`, `/proc/self/maps`, `/proc/self/cmdline`, `/proc/self/environ`, `/proc/self/cwd`, `/proc/self/exe`, `/proc/self/root`, `/proc/self/fd`, `/proc/self/fdinfo`, `/proc/self/limits`, `/proc/1/status`, `/proc/1/stat`, `/proc/1/maps`, `/proc/1/cmdline`, `/proc/1/environ`, `/proc/1/cwd`, `/proc/1/exe`, `/proc/1/root`, `/proc/1/fd`, `/proc/1/fdinfo`, and `/proc/1/limits` through the same VFS and
 file-descriptor syscalls used by normal
 commands. The fd-table proof shows fd 0, fd 1, and fd 2 resolving to `/dev/tty`
@@ -309,6 +309,7 @@ and Mattas identity summary that appears when the normal shell starts.
 `sysctl kernel.osrelease`; process and thread capacity limits are exposed as
 `kernel.pid_max` and `kernel.threads-max` from the same constants that size the
 kernel userspace tables, and `kernel.boot_mode` mirrors the retained boot flags.
+`kernel.boot_flags` exposes the same flag bitmask in hex for boot diagnostics.
 `/bin/find.elf` walks syscall-visible VFS nodes below
 a requested root path, including virtual `/proc` trees and disk-backed
 `/mnt/boot` files, and prints typed path rows.
@@ -492,8 +493,8 @@ because the prompt does not block in `Wait`.
 `/etc/hostname` is a kernel-owned rootfs file, and `/proc/sys/kernel/hostname`
 exposes the same hostname through procfs. `/proc/sys/kernel/ostype`,
 `/proc/sys/kernel/osrelease`, `/proc/sys/kernel/pid_max`,
-`/proc/sys/kernel/threads-max`, `/proc/sys/kernel/boot_mode`, and
-`/proc/sys/kernel/version` expose kernel identity, boot mode, and scheduler
+`/proc/sys/kernel/threads-max`, `/proc/sys/kernel/boot_mode`,
+`/proc/sys/kernel/boot_flags`, and `/proc/sys/kernel/version` expose kernel identity, boot mode, boot flags, and scheduler
 capacity in the same sysctl-style tree. `/proc/heapinfo` exposes kernel heap block and allocation diagnostics. `/proc/vmstat` exposes Linux-like PMM and VMM counters. `/proc/buddyinfo` exposes PMM
 free-run availability by page order from the current bitmap allocator.
 `/proc/loadavg` exposes an
