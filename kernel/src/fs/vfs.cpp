@@ -161,6 +161,11 @@ void append_hex_fixed(char* buffer, uint64_t capacity, uint64_t& cursor, uint64_
     }
 }
 
+void append_hex(char* buffer, uint64_t capacity, uint64_t& cursor, uint64_t value) {
+    append_text(buffer, capacity, cursor, "0x");
+    append_hex_fixed(buffer, capacity, cursor, value, 16);
+}
+
 void append_iomem_range(char* out, uint64_t capacity, uint64_t& cursor, uint64_t base, uint64_t length, const char* label) {
     if (length == 0) return;
     uint64_t end = base + length - 1;
@@ -1519,6 +1524,55 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         }
         break;
     }
+    case VirtualFileKind::ProcBootinfo: {
+        const auto& boot = hk::boot::retained_boot_info();
+        append_text(out, capacity, cursor, "magic ");
+        append_hex(out, capacity, cursor, boot.magic);
+        append_text(out, capacity, cursor, "\nversion ");
+        append_decimal(out, capacity, cursor, boot.version);
+        append_text(out, capacity, cursor, "\nsize ");
+        append_decimal(out, capacity, cursor, boot.size);
+        append_text(out, capacity, cursor, "\nflags ");
+        append_hex(out, capacity, cursor, boot.flags);
+        append_text(out, capacity, cursor, "\nrsdp ");
+        append_hex(out, capacity, cursor, boot.rsdp);
+        append_text(out, capacity, cursor, "\nmemory_map ");
+        append_hex(out, capacity, cursor, boot.memory_map);
+        append_text(out, capacity, cursor, "\nmemory_map_entries ");
+        append_decimal(out, capacity, cursor, boot.memory_map_entries);
+        append_text(out, capacity, cursor, "\nmemory_map_descriptor_size ");
+        append_decimal(out, capacity, cursor, boot.memory_map_descriptor_size);
+        append_text(out, capacity, cursor, "\nkernel_physical_base ");
+        append_hex(out, capacity, cursor, boot.kernel_physical_base);
+        append_text(out, capacity, cursor, "\nkernel_physical_end ");
+        append_hex(out, capacity, cursor, boot.kernel_physical_end);
+        append_text(out, capacity, cursor, "\nkernel_entry ");
+        append_hex(out, capacity, cursor, boot.kernel_entry);
+        append_text(out, capacity, cursor, "\nuser_init_base ");
+        append_hex(out, capacity, cursor, boot.user_init_base);
+        append_text(out, capacity, cursor, "\nuser_init_size ");
+        append_decimal(out, capacity, cursor, boot.user_init_size);
+        append_text(out, capacity, cursor, "\nboot_modules ");
+        append_hex(out, capacity, cursor, boot.boot_modules);
+        append_text(out, capacity, cursor, "\nboot_module_count ");
+        append_decimal(out, capacity, cursor, boot.boot_module_count);
+        append_text(out, capacity, cursor, "\nhhdm_offset ");
+        append_hex(out, capacity, cursor, boot.hhdm_offset);
+        append_text(out, capacity, cursor, "\nframebuffer_base ");
+        append_hex(out, capacity, cursor, boot.framebuffer.base);
+        append_text(out, capacity, cursor, "\nframebuffer_width ");
+        append_decimal(out, capacity, cursor, boot.framebuffer.width);
+        append_text(out, capacity, cursor, "\nframebuffer_height ");
+        append_decimal(out, capacity, cursor, boot.framebuffer.height);
+        append_text(out, capacity, cursor, "\nframebuffer_scanline ");
+        append_decimal(out, capacity, cursor, boot.framebuffer.pixels_per_scanline);
+        append_text(out, capacity, cursor, "\nframebuffer_bytes_per_pixel ");
+        append_decimal(out, capacity, cursor, boot.framebuffer.bytes_per_pixel);
+        append_text(out, capacity, cursor, "\nframebuffer_format ");
+        append_decimal(out, capacity, cursor, boot.framebuffer.format);
+        append_char(out, capacity, cursor, '\n');
+        break;
+    }
     case VirtualFileKind::ProcCmdline:
         append_text(out, capacity, cursor, "BOOT_IMAGE=/boot/kernel.elf root=/dev/ram0 rw console=tty0 boot=uefi user=/user/init.elf");
         append_char(out, capacity, cursor, '\n');
@@ -1928,6 +1982,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/net/summary", VirtualFileKind::ProcNetSummary);
     register_virtual_file("/proc/net/dev", VirtualFileKind::ProcNetDev);
     register_virtual_file("/proc/net/route", VirtualFileKind::ProcNetRoute);
+    register_virtual_file("/proc/bootinfo", VirtualFileKind::ProcBootinfo);
     register_virtual_file("/proc/cmdline", VirtualFileKind::ProcCmdline);
     register_virtual_file("/proc/sys/kernel/hostname", VirtualFileKind::ProcHostname);
     register_virtual_file("/proc/sys/kernel/ostype", VirtualFileKind::ProcOstype);
@@ -2726,6 +2781,7 @@ bool self_test() {
     const Node* proc_filesystems = vfs().find("/proc/filesystems");
     const Node* proc_fs = vfs().find("/proc/fs");
     const Node* proc_vfs = vfs().find("/proc/fs/vfs");
+    const Node* proc_bootinfo = vfs().find("/proc/bootinfo");
     const Node* proc_cmdline = vfs().find("/proc/cmdline");
     const Node* proc_sys = vfs().find("/proc/sys");
     const Node* proc_sys_kernel = vfs().find("/proc/sys/kernel");
@@ -2778,6 +2834,7 @@ bool self_test() {
         !proc_net_summary || proc_net_summary->type != NodeType::VirtualFile || proc_net_summary->virtual_kind != VirtualFileKind::ProcNetSummary ||
         !proc_net_dev || proc_net_dev->type != NodeType::VirtualFile || proc_net_dev->virtual_kind != VirtualFileKind::ProcNetDev ||
         !proc_net_route || proc_net_route->type != NodeType::VirtualFile || proc_net_route->virtual_kind != VirtualFileKind::ProcNetRoute ||
+        !proc_bootinfo || proc_bootinfo->type != NodeType::VirtualFile || proc_bootinfo->virtual_kind != VirtualFileKind::ProcBootinfo ||
         !proc_cmdline || proc_cmdline->type != NodeType::VirtualFile || proc_cmdline->virtual_kind != VirtualFileKind::ProcCmdline ||
         !proc_hostname || proc_hostname->type != NodeType::VirtualFile || proc_hostname->virtual_kind != VirtualFileKind::ProcHostname ||
         !proc_ostype || proc_ostype->type != NodeType::VirtualFile || proc_ostype->virtual_kind != VirtualFileKind::ProcOstype ||
@@ -2799,6 +2856,7 @@ bool self_test() {
     if (vfs().read("/proc/sched_debug", 0, proc_buffer, 8) != 8 || proc_buffer[0] != 'M' || proc_buffer[7] != 's') return false;
     if (vfs().read("/proc/processes", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'P' || proc_buffer[4] != 'P') return false;
     if (vfs().read("/proc/modules", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'N' || proc_buffer[5] != 'S') return false;
+    if (vfs().read("/proc/bootinfo", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'm' || proc_buffer[5] != ' ') return false;
     if (vfs().read("/proc/stat", 0, proc_buffer, 4) != 4 || proc_buffer[0] != 'c' || proc_buffer[3] != ' ') return false;
     if (vfs().read("/proc/mounts", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'b' || proc_buffer[5] != 'm') return false;
     if (vfs().read("/proc/filesystems", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'n' || proc_buffer[5] != '\t') return false;

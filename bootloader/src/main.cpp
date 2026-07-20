@@ -126,6 +126,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\partitions.elf", "/bin/partitions.elf"},
     {L"\\bin\\lsmem.elf", "/bin/lsmem.elf"},
     {L"\\bin\\iomem.elf", "/bin/iomem.elf"},
+    {L"\\bin\\bootinfo.elf", "/bin/bootinfo.elf"},
     {L"\\bin\\fbset.elf", "/bin/fbset.elf"},
     {L"\\bin\\lspci.elf", "/bin/lspci.elf"},
     {L"\\bin\\lsdev.elf", "/bin/lsdev.elf"},
