@@ -43,12 +43,6 @@ constexpr char kProcKernelOstype[] =
 constexpr char kProcKernelOsrelease[] =
     HYBRID_OS_RELEASE "\n";
 
-constexpr char kProcCpuInfo[] =
-    "processor\t: 0\n"
-    "vendor_id\t: QEMU64\n"
-    "model name\t: x86_64 virtual CPU\n"
-    "arch\t\t: x86_64\n";
-
 constexpr uint32_t kMaxMountedFatNodes = 160;
 constexpr uint64_t kVirtualFileScratchBytes = 8192;
 char mounted_fat_paths[kMaxMountedFatNodes][64]{};
@@ -277,6 +271,44 @@ void append_cpu_topology_line(char* out, uint64_t capacity, uint64_t& cursor, co
     append_text(out, capacity, cursor, " tlb_shootdowns ");
     append_decimal(out, capacity, cursor, hk::smp::tlb_shootdown_counter(cpu.cpu_id));
     append_char(out, capacity, cursor, '\n');
+}
+
+void append_cpuinfo_record(char* out, uint64_t capacity, uint64_t& cursor, const hk::cpu::CpuState& cpu) {
+    hk::cpu::CpuRuntimeState runtime{};
+    const bool has_runtime = hk::cpu::runtime().copy_state(cpu.cpu_id, runtime);
+    append_text(out, capacity, cursor, "processor\t: ");
+    append_decimal(out, capacity, cursor, cpu.cpu_id);
+    append_text(out, capacity, cursor, "\nvendor_id\t: IanOS");
+    append_text(out, capacity, cursor, "\nmodel name\t: Mattas virtual x86_64 CPU");
+    append_text(out, capacity, cursor, "\narchitecture\t: x86_64");
+    append_text(out, capacity, cursor, "\napicid\t\t: ");
+    append_decimal(out, capacity, cursor, cpu.apic_id);
+    append_text(out, capacity, cursor, "\nacpi id\t\t: ");
+    append_decimal(out, capacity, cursor, cpu.acpi_processor_id);
+    append_text(out, capacity, cursor, "\nboot cpu\t: ");
+    append_decimal(out, capacity, cursor, cpu.bootstrap ? 1 : 0);
+    append_text(out, capacity, cursor, "\nenabled\t\t: ");
+    append_decimal(out, capacity, cursor, cpu.enabled ? 1 : 0);
+    append_text(out, capacity, cursor, "\nonline\t\t: ");
+    append_decimal(out, capacity, cursor, cpu.online ? 1 : 0);
+    append_text(out, capacity, cursor, "\nstartup tried\t: ");
+    append_decimal(out, capacity, cursor, cpu.startup_attempted ? 1 : 0);
+    append_text(out, capacity, cursor, "\nrun state\t: ");
+    append_text(out, capacity, cursor, has_runtime ? cpu_run_state_name(runtime.state) : "unknown");
+    append_text(out, capacity, cursor, "\ndescriptors\t: ");
+    append_decimal(out, capacity, cursor, has_runtime && runtime.descriptors_ready ? 1 : 0);
+    append_text(out, capacity, cursor, "\nlapic timer\t: ");
+    append_decimal(out, capacity, cursor, has_runtime && runtime.local_apic_timer_ready ? 1 : 0);
+    append_text(out, capacity, cursor, "\nscheduler ticks\t: ");
+    append_decimal(out, capacity, cursor, has_runtime ? runtime.scheduler_ticks : 0);
+    append_text(out, capacity, cursor, "\ninterrupts\t: ");
+    append_decimal(out, capacity, cursor, has_runtime ? runtime.interrupts : 0);
+    append_text(out, capacity, cursor, "\nipi work\t: ");
+    append_decimal(out, capacity, cursor, has_runtime && runtime.ipi_work_done ? 1 : 0);
+    append_text(out, capacity, cursor, "\ntlb shootdowns\t: ");
+    append_decimal(out, capacity, cursor, hk::smp::tlb_shootdown_counter(cpu.cpu_id));
+    append_text(out, capacity, cursor, "\nflags\t\t: fpu msr syscall nx apic x2apic smp");
+    append_text(out, capacity, cursor, "\n\n");
 }
 
 void append_pci_device_line(char* out, uint64_t capacity, uint64_t& cursor, const hk::pci::Device& device) {
@@ -1212,6 +1244,14 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_char(out, capacity, cursor, '\n');
         break;
     }
+    case VirtualFileKind::ProcCpuinfo: {
+        auto& topo = hk::cpu::topology();
+        for (uint32_t i = 0; i < topo.cpu_count(); ++i) {
+            const auto* cpu = topo.cpu(i);
+            if (cpu) append_cpuinfo_record(out, capacity, cursor, *cpu);
+        }
+        break;
+    }
     case VirtualFileKind::ProcCpuSummary: {
         auto& topo = hk::cpu::topology();
         append_text(out, capacity, cursor, "cpus ");
@@ -1950,7 +1990,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_memory_file("/etc/os-release", reinterpret_cast<uint64_t>(kEtcOsRelease), sizeof(kEtcOsRelease) - 1);
     register_memory_file("/etc/hostname", reinterpret_cast<uint64_t>(kEtcHostname), sizeof(kEtcHostname) - 1);
     register_memory_file("/proc/version", reinterpret_cast<uint64_t>(kProcVersion), sizeof(kProcVersion) - 1);
-    register_memory_file("/proc/cpuinfo", reinterpret_cast<uint64_t>(kProcCpuInfo), sizeof(kProcCpuInfo) - 1);
+    register_virtual_file("/proc/cpuinfo", VirtualFileKind::ProcCpuinfo);
     register_virtual_file("/proc/meminfo", VirtualFileKind::ProcMeminfo);
     register_virtual_file("/proc/iomem", VirtualFileKind::ProcIomem);
     register_virtual_file("/proc/uptime", VirtualFileKind::ProcUptime);
@@ -2738,8 +2778,6 @@ bool self_test() {
     if (!os_release || os_release->type != NodeType::MemoryFile || os_release->size < 16) return false;
     const Node* proc_version = vfs().find("/proc/version");
     if (!proc_version || proc_version->type != NodeType::MemoryFile || proc_version->size < 16) return false;
-    const Node* proc_cpuinfo = vfs().find("/proc/cpuinfo");
-    if (!proc_cpuinfo || proc_cpuinfo->type != NodeType::MemoryFile || proc_cpuinfo->size < 16) return false;
     const Node* proc_block = vfs().find("/proc/block");
     const Node* proc_block_bootdisk = vfs().find("/proc/block/bootdisk");
     const Node* proc_diskstats = vfs().find("/proc/diskstats");
@@ -2755,6 +2793,7 @@ bool self_test() {
     const Node* proc_interrupts = vfs().find("/proc/interrupts");
     const Node* proc_tty = vfs().find("/proc/tty");
     const Node* proc_tty_summary = vfs().find("/proc/tty/summary");
+    const Node* proc_cpuinfo = vfs().find("/proc/cpuinfo");
     const Node* proc_cpu = vfs().find("/proc/cpu");
     const Node* proc_cpu_summary = vfs().find("/proc/cpu/summary");
     const Node* proc_cpu_topology = vfs().find("/proc/cpu/topology");
@@ -2824,6 +2863,7 @@ bool self_test() {
         !proc_irq_summary || proc_irq_summary->type != NodeType::VirtualFile || proc_irq_summary->virtual_kind != VirtualFileKind::ProcIrqSummary ||
         !proc_interrupts || proc_interrupts->type != NodeType::VirtualFile || proc_interrupts->virtual_kind != VirtualFileKind::ProcInterrupts ||
         !proc_tty_summary || proc_tty_summary->type != NodeType::VirtualFile || proc_tty_summary->virtual_kind != VirtualFileKind::ProcTtySummary ||
+        !proc_cpuinfo || proc_cpuinfo->type != NodeType::VirtualFile || proc_cpuinfo->virtual_kind != VirtualFileKind::ProcCpuinfo ||
         !proc_cpu_summary || proc_cpu_summary->type != NodeType::VirtualFile || proc_cpu_summary->virtual_kind != VirtualFileKind::ProcCpuSummary ||
         !proc_cpu_topology || proc_cpu_topology->type != NodeType::VirtualFile || proc_cpu_topology->virtual_kind != VirtualFileKind::ProcCpuTopology ||
         !proc_mm_summary || proc_mm_summary->type != NodeType::VirtualFile || proc_mm_summary->virtual_kind != VirtualFileKind::ProcMmSummary ||
@@ -2881,6 +2921,8 @@ bool self_test() {
         proc_buffer[0] != 'V' || proc_buffer[7] != 'C') return false;
     if (vfs().read("/proc/tty/summary", 0, proc_buffer, 10) != 10 ||
         proc_buffer[0] != 'i' || proc_buffer[5] != '_') return false;
+    if (vfs().read("/proc/cpuinfo", 0, proc_buffer, 10) != 10 ||
+        proc_buffer[0] != 'p' || proc_buffer[9] != '\t') return false;
     if (vfs().read("/proc/cpu/summary", 0, proc_buffer, 5) != 5 ||
         proc_buffer[0] != 'c' || proc_buffer[4] != ' ') return false;
     if (vfs().read("/proc/cpu/topology", 0, proc_buffer, 7) != 7 ||

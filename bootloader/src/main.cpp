@@ -149,6 +149,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\pidof.elf", "/bin/pidof.elf"},
     {L"\\bin\\nproc.elf", "/bin/nproc.elf"},
     {L"\\bin\\lscpu.elf", "/bin/lscpu.elf"},
+    {L"\\bin\\cpuinfo.elf", "/bin/cpuinfo.elf"},
     {L"\\bin\\schedstat.elf", "/bin/schedstat.elf"},
     {L"\\bin\\vmstat.elf", "/bin/vmstat.elf"},
     {L"\\bin\\top.elf", "/bin/top.elf"},
