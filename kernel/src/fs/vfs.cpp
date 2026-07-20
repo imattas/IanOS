@@ -2698,6 +2698,26 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_decimal(out, capacity, cursor, hk::console().stats().visible_rows);
         append_char(out, capacity, cursor, '\n');
         break;
+    case VirtualFileKind::ProcVmFreePages:
+        append_decimal(out, capacity, cursor, hk::mm::pmm().stats().free_pages);
+        append_char(out, capacity, cursor, '\n');
+        break;
+    case VirtualFileKind::ProcVmUsedPages:
+        append_decimal(out, capacity, cursor, hk::mm::pmm().stats().used_pages);
+        append_char(out, capacity, cursor, '\n');
+        break;
+    case VirtualFileKind::ProcVmTotalPages:
+        append_decimal(out, capacity, cursor, hk::mm::pmm().stats().total_pages);
+        append_char(out, capacity, cursor, '\n');
+        break;
+    case VirtualFileKind::ProcVmMappedPages:
+        append_decimal(out, capacity, cursor, hk::mm::vmm().diagnostics().mapped_pages);
+        append_char(out, capacity, cursor, '\n');
+        break;
+    case VirtualFileKind::ProcVmHeapBytes:
+        append_decimal(out, capacity, cursor, hk::mm::heap().stats().used_bytes);
+        append_char(out, capacity, cursor, '\n');
+        break;
     case VirtualFileKind::ProcBootMode:
         append_text(out, capacity, cursor, boot_mode_name());
         append_char(out, capacity, cursor, '\n');
@@ -3089,6 +3109,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_directory("/proc/sys");
     register_directory("/proc/sys/kernel");
     register_directory("/proc/sys/tty");
+    register_directory("/proc/sys/vm");
     register_directory("/dev");
     register_directory("/tmp", true);
     register_directory("/disk");
@@ -3153,6 +3174,11 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/sys/tty/buffered_input", VirtualFileKind::ProcTtyBufferedInput);
     register_virtual_file("/proc/sys/tty/columns", VirtualFileKind::ProcTtyColumns);
     register_virtual_file("/proc/sys/tty/rows", VirtualFileKind::ProcTtyRows);
+    register_virtual_file("/proc/sys/vm/free_pages", VirtualFileKind::ProcVmFreePages);
+    register_virtual_file("/proc/sys/vm/used_pages", VirtualFileKind::ProcVmUsedPages);
+    register_virtual_file("/proc/sys/vm/total_pages", VirtualFileKind::ProcVmTotalPages);
+    register_virtual_file("/proc/sys/vm/mapped_pages", VirtualFileKind::ProcVmMappedPages);
+    register_virtual_file("/proc/sys/vm/heap_bytes", VirtualFileKind::ProcVmHeapBytes);
     register_virtual_file("/proc/sys/kernel/boot_mode", VirtualFileKind::ProcBootMode);
     register_virtual_file("/proc/sys/kernel/boot_flags", VirtualFileKind::ProcBootFlags);
     register_virtual_file("/proc/sys/kernel/boot_options", VirtualFileKind::ProcBootOptions);
@@ -4071,6 +4097,7 @@ bool self_test() {
     const Node* proc_sys = vfs().find("/proc/sys");
     const Node* proc_sys_kernel = vfs().find("/proc/sys/kernel");
     const Node* proc_sys_tty = vfs().find("/proc/sys/tty");
+    const Node* proc_sys_vm = vfs().find("/proc/sys/vm");
     const Node* proc_hostname = vfs().find("/proc/sys/kernel/hostname");
     const Node* proc_ostype = vfs().find("/proc/sys/kernel/ostype");
     const Node* proc_osrelease = vfs().find("/proc/sys/kernel/osrelease");
@@ -4085,6 +4112,11 @@ bool self_test() {
     const Node* proc_tty_buffered_input = vfs().find("/proc/sys/tty/buffered_input");
     const Node* proc_tty_columns = vfs().find("/proc/sys/tty/columns");
     const Node* proc_tty_rows = vfs().find("/proc/sys/tty/rows");
+    const Node* proc_vm_free_pages = vfs().find("/proc/sys/vm/free_pages");
+    const Node* proc_vm_used_pages = vfs().find("/proc/sys/vm/used_pages");
+    const Node* proc_vm_total_pages = vfs().find("/proc/sys/vm/total_pages");
+    const Node* proc_vm_mapped_pages = vfs().find("/proc/sys/vm/mapped_pages");
+    const Node* proc_vm_heap_bytes = vfs().find("/proc/sys/vm/heap_bytes");
     const Node* proc_boot_mode = vfs().find("/proc/sys/kernel/boot_mode");
     const Node* proc_boot_flags = vfs().find("/proc/sys/kernel/boot_flags");
     const Node* proc_boot_options = vfs().find("/proc/sys/kernel/boot_options");
@@ -4119,7 +4151,8 @@ bool self_test() {
     if (!proc_fs || proc_fs->type != NodeType::Directory ||
         !proc_sys || proc_sys->type != NodeType::Directory ||
         !proc_sys_kernel || proc_sys_kernel->type != NodeType::Directory ||
-        !proc_sys_tty || proc_sys_tty->type != NodeType::Directory) return false;
+        !proc_sys_tty || proc_sys_tty->type != NodeType::Directory ||
+        !proc_sys_vm || proc_sys_vm->type != NodeType::Directory) return false;
     if (!proc_meminfo || proc_meminfo->type != NodeType::VirtualFile || proc_meminfo->virtual_kind != VirtualFileKind::ProcMeminfo ||
         !proc_iomem || proc_iomem->type != NodeType::VirtualFile || proc_iomem->virtual_kind != VirtualFileKind::ProcIomem ||
         !proc_rtc || proc_rtc->type != NodeType::VirtualFile || proc_rtc->virtual_kind != VirtualFileKind::ProcRtc ||
@@ -4173,6 +4206,11 @@ bool self_test() {
         !proc_tty_buffered_input || proc_tty_buffered_input->type != NodeType::VirtualFile || proc_tty_buffered_input->virtual_kind != VirtualFileKind::ProcTtyBufferedInput ||
         !proc_tty_columns || proc_tty_columns->type != NodeType::VirtualFile || proc_tty_columns->virtual_kind != VirtualFileKind::ProcTtyColumns ||
         !proc_tty_rows || proc_tty_rows->type != NodeType::VirtualFile || proc_tty_rows->virtual_kind != VirtualFileKind::ProcTtyRows ||
+        !proc_vm_free_pages || proc_vm_free_pages->type != NodeType::VirtualFile || proc_vm_free_pages->virtual_kind != VirtualFileKind::ProcVmFreePages ||
+        !proc_vm_used_pages || proc_vm_used_pages->type != NodeType::VirtualFile || proc_vm_used_pages->virtual_kind != VirtualFileKind::ProcVmUsedPages ||
+        !proc_vm_total_pages || proc_vm_total_pages->type != NodeType::VirtualFile || proc_vm_total_pages->virtual_kind != VirtualFileKind::ProcVmTotalPages ||
+        !proc_vm_mapped_pages || proc_vm_mapped_pages->type != NodeType::VirtualFile || proc_vm_mapped_pages->virtual_kind != VirtualFileKind::ProcVmMappedPages ||
+        !proc_vm_heap_bytes || proc_vm_heap_bytes->type != NodeType::VirtualFile || proc_vm_heap_bytes->virtual_kind != VirtualFileKind::ProcVmHeapBytes ||
         !proc_boot_mode || proc_boot_mode->type != NodeType::VirtualFile || proc_boot_mode->virtual_kind != VirtualFileKind::ProcBootMode ||
         !proc_boot_flags || proc_boot_flags->type != NodeType::VirtualFile || proc_boot_flags->virtual_kind != VirtualFileKind::ProcBootFlags ||
         !proc_boot_options || proc_boot_options->type != NodeType::VirtualFile || proc_boot_options->virtual_kind != VirtualFileKind::ProcBootOptions ||
@@ -4290,6 +4328,16 @@ bool self_test() {
         proc_buffer[0] < '1' || proc_buffer[0] > '9') return false;
     if (vfs().read("/proc/sys/tty/rows", 0, proc_buffer, 2) == 0 ||
         proc_buffer[0] < '1' || proc_buffer[0] > '9') return false;
+    if (vfs().read("/proc/sys/vm/free_pages", 0, proc_buffer, 2) == 0 ||
+        proc_buffer[0] < '0' || proc_buffer[0] > '9') return false;
+    if (vfs().read("/proc/sys/vm/used_pages", 0, proc_buffer, 2) == 0 ||
+        proc_buffer[0] < '0' || proc_buffer[0] > '9') return false;
+    if (vfs().read("/proc/sys/vm/total_pages", 0, proc_buffer, 2) == 0 ||
+        proc_buffer[0] < '1' || proc_buffer[0] > '9') return false;
+    if (vfs().read("/proc/sys/vm/mapped_pages", 0, proc_buffer, 2) == 0 ||
+        proc_buffer[0] < '0' || proc_buffer[0] > '9') return false;
+    if (vfs().read("/proc/sys/vm/heap_bytes", 0, proc_buffer, 2) == 0 ||
+        proc_buffer[0] < '0' || proc_buffer[0] > '9') return false;
     if (vfs().read("/proc/sys/kernel/boot_mode", 0, proc_buffer, 5) != 5 ||
         proc_buffer[0] != 'u' || proc_buffer[1] != 'e' || proc_buffer[2] != 'f' || proc_buffer[3] != 'i' ||
         (proc_buffer[4] != '\n' && proc_buffer[4] != '-')) return false;

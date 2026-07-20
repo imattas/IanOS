@@ -17,6 +17,11 @@ constexpr const char* kKeys[] = {
     "tty.buffered_input",
     "tty.columns",
     "tty.rows",
+    "vm.free_pages",
+    "vm.used_pages",
+    "vm.total_pages",
+    "vm.mapped_pages",
+    "vm.heap_bytes",
     "kernel.boot_mode",
     "kernel.boot_flags",
     "kernel.boot_options",
@@ -42,6 +47,11 @@ constexpr const char* kPaths[] = {
     "/proc/sys/tty/buffered_input",
     "/proc/sys/tty/columns",
     "/proc/sys/tty/rows",
+    "/proc/sys/vm/free_pages",
+    "/proc/sys/vm/used_pages",
+    "/proc/sys/vm/total_pages",
+    "/proc/sys/vm/mapped_pages",
+    "/proc/sys/vm/heap_bytes",
     "/proc/sys/kernel/boot_mode",
     "/proc/sys/kernel/boot_flags",
     "/proc/sys/kernel/boot_options",
@@ -108,7 +118,7 @@ int key_index(const char* key) {
 }
 
 void print_usage() {
-    hybrid::user::write_line("[sysctl] usage sysctl [-a] [kernel.hostname|kernel.ostype|kernel.osrelease|kernel.pid_max|kernel.threads-max|kernel.cpus|kernel.online_cpus|kernel.cpu_online_mask|kernel.cpu_scheduler_mask|kernel.cpu_parked_mask|tty.input_mode|tty.buffered_input|tty.columns|tty.rows|kernel.boot_mode|kernel.boot_flags|kernel.boot_options|kernel.machine|kernel.modules|kernel.features|kernel.abi_version|kernel.version]");
+    hybrid::user::write_line("[sysctl] usage sysctl [-a] [kernel.hostname|kernel.ostype|kernel.osrelease|kernel.pid_max|kernel.threads-max|kernel.cpus|kernel.online_cpus|kernel.cpu_online_mask|kernel.cpu_scheduler_mask|kernel.cpu_parked_mask|tty.input_mode|tty.buffered_input|tty.columns|tty.rows|vm.free_pages|vm.used_pages|vm.total_pages|vm.mapped_pages|vm.heap_bytes|kernel.boot_mode|kernel.boot_flags|kernel.boot_options|kernel.machine|kernel.modules|kernel.features|kernel.abi_version|kernel.version]");
 }
 
 } // namespace

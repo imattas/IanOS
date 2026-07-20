@@ -518,6 +518,11 @@ exposes the same hostname through procfs. `/proc/sys/kernel/ostype`,
 `/proc/sys/kernel/version` expose kernel identity, boot mode, boot flags,
 machine type, CPU topology counts and masks, boot-module count, feature flags, ABI
 version, and scheduler capacity in the same sysctl-style tree.
+`/proc/sys/vm/free_pages`, `/proc/sys/vm/used_pages`,
+`/proc/sys/vm/total_pages`, `/proc/sys/vm/mapped_pages`, and
+`/proc/sys/vm/heap_bytes` expose compact PMM, VMM, and heap counters for
+Linux-like sysctl discovery without parsing the longer `/proc/meminfo`,
+`/proc/vmstat`, or `/proc/heapinfo` reports.
 `/proc/heapinfo` exposes kernel heap block and allocation diagnostics. `/proc/vmstat` exposes Linux-like PMM and VMM counters. `/proc/buddyinfo` exposes PMM
 free-run availability by page order from the current bitmap allocator.
 `/proc/uptime` exposes raw ticks, PIT frequency, whole seconds, LAPIC tick
