@@ -3,9 +3,27 @@ from __future__ import annotations
 import pathlib
 import struct
 import sys
+from dataclasses import dataclass
 
 
 BYTES_PER_SECTOR = 512
+
+
+@dataclass(frozen=True)
+class ImageReport:
+    image: pathlib.Path
+    image_bytes: int
+    fat_capacity_bytes: int
+    fat_cluster_bytes: int
+    esp_payload_bytes: int
+    esp_allocated_estimate: int
+    fat_free_estimate: int
+    files: int
+    directories: int
+    bootx64_efi: int
+    kernel_elf: int
+    init_elf: int
+    user_elves_total: int
 
 
 def align_up(value: int, align: int) -> int:
@@ -48,18 +66,11 @@ def size_of(path: pathlib.Path) -> int:
     return path.stat().st_size if path.exists() else 0
 
 
-def main() -> int:
-    if len(sys.argv) != 3:
-        print("usage: image_report.py <esp-dir> <kernel.img>", file=sys.stderr)
-        return 2
-    esp = pathlib.Path(sys.argv[1])
-    image = pathlib.Path(sys.argv[2])
+def build_report(esp: pathlib.Path, image: pathlib.Path) -> ImageReport:
     if not esp.exists():
-        print(f"image_report: missing ESP directory: {esp}", file=sys.stderr)
-        return 1
+        raise FileNotFoundError(f"missing ESP directory: {esp}")
     if not image.exists():
-        print(f"image_report: missing image: {image}", file=sys.stderr)
-        return 1
+        raise FileNotFoundError(f"missing image: {image}")
 
     capacity_bytes, cluster_size = read_bpb(image)
     file_count, directory_count, payload_bytes, allocated_bytes = collect_source(esp, cluster_size)
@@ -71,20 +82,49 @@ def main() -> int:
     init = esp / "user" / "init.elf"
     user_total = sum(path.stat().st_size for path in (esp / "bin").glob("*.elf")) if (esp / "bin").exists() else 0
 
+    return ImageReport(
+        image=image,
+        image_bytes=image_bytes,
+        fat_capacity_bytes=capacity_bytes,
+        fat_cluster_bytes=cluster_size,
+        esp_payload_bytes=payload_bytes,
+        esp_allocated_estimate=allocated_bytes,
+        fat_free_estimate=free_estimate,
+        files=file_count,
+        directories=directory_count,
+        bootx64_efi=size_of(boot),
+        kernel_elf=size_of(kernel),
+        init_elf=size_of(init),
+        user_elves_total=user_total,
+    )
+
+
+def print_report(report: ImageReport) -> None:
     print("Image report:")
-    print(f"  image: {image}")
-    print(f"  image_bytes: {image_bytes}")
-    print(f"  fat_capacity_bytes: {capacity_bytes}")
-    print(f"  fat_cluster_bytes: {cluster_size}")
-    print(f"  esp_payload_bytes: {payload_bytes}")
-    print(f"  esp_allocated_estimate: {allocated_bytes}")
-    print(f"  fat_free_estimate: {free_estimate}")
-    print(f"  files: {file_count}")
-    print(f"  directories: {directory_count}")
-    print(f"  BOOTX64.EFI: {size_of(boot)}")
-    print(f"  kernel.elf: {size_of(kernel)}")
-    print(f"  init.elf: {size_of(init)}")
-    print(f"  user_elves_total: {user_total}")
+    print(f"  image: {report.image}")
+    print(f"  image_bytes: {report.image_bytes}")
+    print(f"  fat_capacity_bytes: {report.fat_capacity_bytes}")
+    print(f"  fat_cluster_bytes: {report.fat_cluster_bytes}")
+    print(f"  esp_payload_bytes: {report.esp_payload_bytes}")
+    print(f"  esp_allocated_estimate: {report.esp_allocated_estimate}")
+    print(f"  fat_free_estimate: {report.fat_free_estimate}")
+    print(f"  files: {report.files}")
+    print(f"  directories: {report.directories}")
+    print(f"  BOOTX64.EFI: {report.bootx64_efi}")
+    print(f"  kernel.elf: {report.kernel_elf}")
+    print(f"  init.elf: {report.init_elf}")
+    print(f"  user_elves_total: {report.user_elves_total}")
+
+
+def main() -> int:
+    if len(sys.argv) != 3:
+        print("usage: image_report.py <esp-dir> <kernel.img>", file=sys.stderr)
+        return 2
+    try:
+        print_report(build_report(pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])))
+    except (FileNotFoundError, ValueError) as error:
+        print(f"image_report: {error}", file=sys.stderr)
+        return 1
     return 0
 
 

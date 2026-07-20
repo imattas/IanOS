@@ -4,6 +4,8 @@ import pathlib
 import struct
 import sys
 
+from image_report import build_report
+
 
 def fail(message: str) -> int:
     print(f"artifact_layout: {message}", file=sys.stderr)
@@ -93,6 +95,35 @@ def check_pe(path: pathlib.Path) -> int:
     return 0
 
 
+def check_image_report(report, esp_dir: pathlib.Path, user_program_count: int) -> int:
+    boot = esp_dir / "EFI" / "BOOT" / "BOOTX64.EFI"
+    kernel = esp_dir / "kernel.elf"
+    init = esp_dir / "user" / "init.elf"
+    user_elves = list((esp_dir / "bin").glob("*.elf"))
+    expected_payload = sum(path.stat().st_size for path in esp_dir.rglob("*") if path.is_file())
+    if report.image_bytes != report.fat_capacity_bytes:
+        return fail("kernel.img byte size does not match FAT capacity")
+    if report.fat_cluster_bytes == 0 or report.fat_cluster_bytes % 512 != 0:
+        return fail(f"invalid FAT cluster size {report.fat_cluster_bytes}")
+    if report.esp_payload_bytes != expected_payload:
+        return fail("image report payload byte total does not match ESP files")
+    if report.esp_allocated_estimate < report.esp_payload_bytes:
+        return fail("image report allocated estimate is below payload bytes")
+    if report.fat_free_estimate == 0:
+        return fail("image report shows no free FAT capacity")
+    if report.files < user_program_count + 3:
+        return fail("image report file count is below expected boot artifacts")
+    if report.bootx64_efi != boot.stat().st_size:
+        return fail("image report BOOTX64.EFI size mismatch")
+    if report.kernel_elf != kernel.stat().st_size:
+        return fail("image report kernel.elf size mismatch")
+    if report.init_elf != init.stat().st_size:
+        return fail("image report init.elf size mismatch")
+    if report.user_elves_total != sum(path.stat().st_size for path in user_elves):
+        return fail("image report user ELF total mismatch")
+    return 0
+
+
 def main() -> int:
     out_dir = pathlib.Path(sys.argv[1])
     esp_dir = pathlib.Path(sys.argv[2])
@@ -118,6 +149,9 @@ def main() -> int:
     image_data = image.read_bytes()[:512]
     if len(image_data) != 512 or image_data[510:512] != b"\x55\xAA" or image_data[54:62] != b"FAT16   ":
         return fail("kernel.img is not a FAT16 bootable disk image")
+    result = check_image_report(build_report(esp_dir, image), esp_dir, len(user_programs))
+    if result:
+        return result
     for name, elf in zip(user_programs, user_elves):
         result = check_elf(elf, f"{name}.elf", 0x400000)
         if result:
