@@ -23,6 +23,7 @@ enum class VirtualFileKind : uint8_t {
     ProcSelfMaps,
     ProcSelfCmdline,
     ProcSelfEnviron,
+    ProcSelfCwd,
     ProcSelfFd,
     ProcMounts,
     ProcFilesystems,
