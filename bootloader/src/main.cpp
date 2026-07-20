@@ -30,6 +30,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\uname.elf", "/bin/uname.elf"},
     {L"\\bin\\hostname.elf", "/bin/hostname.elf"},
     {L"\\bin\\free.elf", "/bin/free.elf"},
+    {L"\\bin\\meminfo.elf", "/bin/meminfo.elf"},
     {L"\\bin\\uptime.elf", "/bin/uptime.elf"},
     {L"\\bin\\date.elf", "/bin/date.elf"},
     {L"\\bin\\rtc.elf", "/bin/rtc.elf"},
