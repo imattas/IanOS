@@ -11,6 +11,7 @@ constexpr const char* kKeys[] = {
     "kernel.boot_mode",
     "kernel.boot_flags",
     "kernel.boot_options",
+    "kernel.abi_version",
     "kernel.version",
 };
 
@@ -23,6 +24,7 @@ constexpr const char* kPaths[] = {
     "/proc/sys/kernel/boot_mode",
     "/proc/sys/kernel/boot_flags",
     "/proc/sys/kernel/boot_options",
+    "/proc/sys/kernel/abi_version",
     "/proc/sys/kernel/version",
 };
 
@@ -82,7 +84,7 @@ int key_index(const char* key) {
 }
 
 void print_usage() {
-    hybrid::user::write_line("[sysctl] usage sysctl [-a] [kernel.hostname|kernel.ostype|kernel.osrelease|kernel.pid_max|kernel.threads-max|kernel.boot_mode|kernel.boot_flags|kernel.boot_options|kernel.version]");
+    hybrid::user::write_line("[sysctl] usage sysctl [-a] [kernel.hostname|kernel.ostype|kernel.osrelease|kernel.pid_max|kernel.threads-max|kernel.boot_mode|kernel.boot_flags|kernel.boot_options|kernel.abi_version|kernel.version]");
 }
 
 } // namespace
