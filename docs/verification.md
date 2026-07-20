@@ -51,11 +51,11 @@ The verifier performs the following gates:
   `/proc/mounts`, `/proc/filesystems`, `/proc/fs/vfs`, `/proc/cmdline`,
   `/proc/stat`, `/proc/sys/kernel/hostname`, `/proc/sys/kernel/ostype`,
   `/proc/sys/kernel/osrelease`, `/proc/sys/kernel/version`,
-  `/proc/self/status`, `/proc/self/stat`, `/proc/self/maps`, `/proc/self/fd`, `/proc/1/status`, `/proc/1/stat`, `/proc/1/maps`, and `/proc/1/fd` virtual-file metadata
+  `/proc/self/status`, `/proc/self/stat`, `/proc/self/maps`, `/proc/self/cmdline`, `/proc/self/fd`, `/proc/1/status`, `/proc/1/stat`, `/proc/1/maps`, `/proc/1/cmdline`, and `/proc/1/fd` virtual-file metadata
   and reads, default `/dev/tty` fd 0/1/2 process descriptors,
   `/proc/self/fd/1` readlink and realpath resolution under stdout redirection,
   `/dev/null`, `/dev/zero`, `/dev/tty`, and `/dev/console` character-device
-  metadata plus bounded `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/findmnt.elf`, `/bin/iostat.elf`, `/bin/lsmem.elf`, `/bin/iomem.elf`, `/bin/fbset.elf`, `/bin/lspci.elf`, `/bin/irqstat.elf`, `/bin/interrupts.elf`, `/bin/mmstat.elf`, `/bin/buddyinfo.elf`, `/bin/heapinfo.elf`, `/bin/procvmstat.elf`, `/bin/procstat.elf`, `/bin/netstat.elf`, `/bin/lsmod.elf`, `/bin/cmdline.elf`, `/bin/kmsg.elf`, `/bin/loadavg.elf`, `/bin/scheddebug.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/ttystat.elf`, `/bin/stty.elf`,
+  metadata plus bounded `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/findmnt.elf`, `/bin/iostat.elf`, `/bin/lsmem.elf`, `/bin/iomem.elf`, `/bin/fbset.elf`, `/bin/lspci.elf`, `/bin/irqstat.elf`, `/bin/interrupts.elf`, `/bin/mmstat.elf`, `/bin/buddyinfo.elf`, `/bin/heapinfo.elf`, `/bin/procvmstat.elf`, `/bin/procstat.elf`, `/bin/netstat.elf`, `/bin/lsmod.elf`, `/bin/cmdline.elf`, `/bin/pcmdline.elf`, `/bin/kmsg.elf`, `/bin/loadavg.elf`, `/bin/scheddebug.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/ttystat.elf`, `/bin/stty.elf`,
   and `/bin/ttyread.elf` TTY summary streaming, input-mode, read/write, mode-switch, canonical stdin,
   `/bin/clear.elf` terminal-clear execution, and terminal-read idle proof,
   AHCI-backed `/disk/bootsector.bin`, block-cache self-test markers,
