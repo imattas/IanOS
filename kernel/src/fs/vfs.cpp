@@ -655,6 +655,25 @@ bool process_info_by_pid(uint64_t pid, hybrid::ProcessInfo& out) {
     return false;
 }
 
+bool thread_info_by_tid(uint64_t tid, hybrid::UserThreadInfo& out) {
+    auto& manager = hk::userspace::userspace_manager();
+    for (uint64_t i = 0; i < manager.user_thread_count(); ++i) {
+        hybrid::UserThreadInfo thread{};
+        if (manager.copy_thread_info(i, thread) && thread.tid == tid) {
+            out = thread;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool thread_belongs_to_pid(uint64_t pid, uint64_t tid, hybrid::UserThreadInfo* out = nullptr) {
+    hybrid::UserThreadInfo thread{};
+    if (!thread_info_by_tid(tid, thread) || thread.pid != pid) return false;
+    if (out) *out = thread;
+    return true;
+}
+
 enum class DynamicProcKind : uint8_t {
     None,
     PidDirectory,
@@ -672,6 +691,10 @@ enum class DynamicProcKind : uint8_t {
     PidFdEntry,
     PidFdinfo,
     PidFdinfoEntry,
+    PidTask,
+    PidTaskTidDirectory,
+    PidTaskTidStatus,
+    PidTaskTidStat,
 };
 
 char proc_process_state_char(uint32_t state) {
@@ -681,6 +704,38 @@ char proc_process_state_char(uint32_t state) {
     case 3: return 'T';
     case 4: return 'Z';
     default: return 'I';
+    }
+}
+
+const char* proc_thread_state_name(uint32_t state) {
+    switch (state) {
+    case 1: return "created";
+    case 2: return "runnable";
+    case 3: return "running";
+    case 4: return "blocked";
+    case 5: return "exited";
+    default: return "empty";
+    }
+}
+
+char proc_thread_state_char(uint32_t state) {
+    switch (state) {
+    case 1: return 'N';
+    case 2: return 'R';
+    case 3: return 'R';
+    case 4: return 'S';
+    case 5: return 'Z';
+    default: return 'I';
+    }
+}
+
+const char* proc_thread_block_reason_name(uint32_t reason) {
+    switch (reason) {
+    case 1: return "pipe-read";
+    case 2: return "pipe-write";
+    case 3: return "process-wait";
+    case 4: return "sleep";
+    default: return "none";
     }
 }
 
@@ -709,21 +764,35 @@ void copy_fd_target_text(char (&out)[64], const hybrid::FileDescriptorInfo& fd) 
     append_decimal(out, sizeof(out), cursor, fd.pipe_id);
 }
 
-DynamicProcKind parse_dynamic_proc_path(const char* normalized, uint64_t& pid, uint32_t* fd_number = nullptr) {
+DynamicProcKind parse_dynamic_proc_path(const char* normalized, uint64_t& pid, uint32_t* fd_number = nullptr, uint64_t* task_tid = nullptr) {
     pid = 0;
     if (fd_number) *fd_number = 0;
+    if (task_tid) *task_tid = 0;
     constexpr const char* prefix = "/proc/";
     uint64_t cursor = 0;
     while (prefix[cursor] != 0) {
         if (!normalized || normalized[cursor] != prefix[cursor]) return DynamicProcKind::None;
         ++cursor;
     }
-    uint64_t digits_start = cursor;
-    while (normalized[cursor] >= '0' && normalized[cursor] <= '9') ++cursor;
-    if (!parse_decimal_segment(normalized + digits_start, cursor - digits_start, pid)) return DynamicProcKind::None;
+    bool self_alias = false;
+    if (normalized[cursor] == 's' && normalized[cursor + 1] == 'e' && normalized[cursor + 2] == 'l' &&
+        normalized[cursor + 3] == 'f') {
+        cursor += 4;
+        self_alias = true;
+        if (!(normalized[cursor] == '/' && normalized[cursor + 1] == 't' && normalized[cursor + 2] == 'a' &&
+              normalized[cursor + 3] == 's' && normalized[cursor + 4] == 'k')) {
+            return DynamicProcKind::None;
+        }
+        pid = hk::userspace::userspace_manager().current_pid();
+        if (pid == 0) return DynamicProcKind::None;
+    } else {
+        uint64_t digits_start = cursor;
+        while (normalized[cursor] >= '0' && normalized[cursor] <= '9') ++cursor;
+        if (!parse_decimal_segment(normalized + digits_start, cursor - digits_start, pid)) return DynamicProcKind::None;
+    }
     hybrid::ProcessInfo process{};
     if (!process_info_by_pid(pid, process)) return DynamicProcKind::None;
-    if (normalized[cursor] == 0) return DynamicProcKind::PidDirectory;
+    if (normalized[cursor] == 0) return self_alias ? DynamicProcKind::None : DynamicProcKind::PidDirectory;
     if (normalized[cursor++] != '/') return DynamicProcKind::None;
     if (text_equal(normalized + cursor, "status")) return DynamicProcKind::PidStatus;
     if (text_equal(normalized + cursor, "stat")) return DynamicProcKind::PidStat;
@@ -735,6 +804,23 @@ DynamicProcKind parse_dynamic_proc_path(const char* normalized, uint64_t& pid, u
     if (text_equal(normalized + cursor, "exe")) return DynamicProcKind::PidExe;
     if (text_equal(normalized + cursor, "root")) return DynamicProcKind::PidRoot;
     if (text_equal(normalized + cursor, "limits")) return DynamicProcKind::PidLimits;
+    if (text_equal(normalized + cursor, "task")) return DynamicProcKind::PidTask;
+    if (normalized[cursor] == 't' && normalized[cursor + 1] == 'a' && normalized[cursor + 2] == 's' &&
+        normalized[cursor + 3] == 'k' && normalized[cursor + 4] == '/') {
+        cursor += 5;
+        uint64_t tid = 0;
+        uint64_t tid_start = cursor;
+        while (normalized[cursor] >= '0' && normalized[cursor] <= '9') ++cursor;
+        if (!parse_decimal_segment(normalized + tid_start, cursor - tid_start, tid)) return DynamicProcKind::None;
+        hybrid::UserThreadInfo thread{};
+        if (!thread_belongs_to_pid(pid, tid, &thread)) return DynamicProcKind::None;
+        if (task_tid) *task_tid = tid;
+        if (normalized[cursor] == 0) return DynamicProcKind::PidTaskTidDirectory;
+        if (normalized[cursor++] != '/') return DynamicProcKind::None;
+        if (text_equal(normalized + cursor, "status")) return DynamicProcKind::PidTaskTidStatus;
+        if (text_equal(normalized + cursor, "stat")) return DynamicProcKind::PidTaskTidStat;
+        return DynamicProcKind::None;
+    }
     if (text_equal(normalized + cursor, "fd")) return DynamicProcKind::PidFd;
     if (normalized[cursor] == 'f' && normalized[cursor + 1] == 'd' && normalized[cursor + 2] == '/') {
         cursor += 3;
@@ -850,6 +936,77 @@ void render_proc_stat(uint64_t pid, char* out, uint64_t capacity) {
     append_decimal(out, capacity, cursor, process.user_stack_top);
     append_char(out, capacity, cursor, ' ');
     append_decimal(out, capacity, cursor, process.exit_code);
+    append_char(out, capacity, cursor, '\n');
+}
+
+void render_proc_task_status(uint64_t pid, uint64_t tid, char* out, uint64_t capacity) {
+    uint64_t cursor = 0;
+    out[0] = 0;
+    hybrid::ProcessInfo process{};
+    hybrid::UserThreadInfo thread{};
+    if (!process_info_by_pid(pid, process) || !thread_belongs_to_pid(pid, tid, &thread)) return;
+    append_text(out, capacity, cursor, "Name:\t");
+    append_text(out, capacity, cursor, process.name);
+    append_text(out, capacity, cursor, "\nTgid:\t");
+    append_decimal(out, capacity, cursor, pid);
+    append_text(out, capacity, cursor, "\nPid:\t");
+    append_decimal(out, capacity, cursor, tid);
+    append_text(out, capacity, cursor, "\nPPid:\t");
+    append_decimal(out, capacity, cursor, process.parent_pid);
+    append_text(out, capacity, cursor, "\nState:\t");
+    append_text(out, capacity, cursor, proc_thread_state_name(thread.state));
+    append_text(out, capacity, cursor, "\nBlockReason:\t");
+    append_text(out, capacity, cursor, proc_thread_block_reason_name(thread.block_reason));
+    append_text(out, capacity, cursor, "\nWaitPipe:\t");
+    append_decimal(out, capacity, cursor, thread.wait_pipe_id);
+    append_text(out, capacity, cursor, "\nWaitTarget:\t");
+    append_decimal(out, capacity, cursor, thread.wait_process_id);
+    append_text(out, capacity, cursor, "\nSyscalls:\t");
+    append_decimal(out, capacity, cursor, thread.syscall_count);
+    append_text(out, capacity, cursor, "\nLastSyscall:\t");
+    append_decimal(out, capacity, cursor, thread.last_syscall);
+    append_text(out, capacity, cursor, "\nRunTicks:\t");
+    append_decimal(out, capacity, cursor, thread.run_ticks);
+    append_text(out, capacity, cursor, "\nSwitches:\t");
+    append_decimal(out, capacity, cursor, thread.switch_count);
+    append_text(out, capacity, cursor, "\nPreempts:\t");
+    append_decimal(out, capacity, cursor, thread.preempt_count);
+    append_text(out, capacity, cursor, "\nEntry:\t");
+    append_hex(out, capacity, cursor, thread.entry);
+    append_text(out, capacity, cursor, "\nUserSp:\t");
+    append_hex(out, capacity, cursor, thread.user_stack_pointer);
+    append_char(out, capacity, cursor, '\n');
+}
+
+void render_proc_task_stat(uint64_t pid, uint64_t tid, char* out, uint64_t capacity) {
+    uint64_t cursor = 0;
+    out[0] = 0;
+    hybrid::ProcessInfo process{};
+    hybrid::UserThreadInfo thread{};
+    if (!process_info_by_pid(pid, process) || !thread_belongs_to_pid(pid, tid, &thread)) return;
+    append_decimal(out, capacity, cursor, tid);
+    append_text(out, capacity, cursor, " (");
+    append_text(out, capacity, cursor, process.name);
+    append_text(out, capacity, cursor, ") ");
+    append_char(out, capacity, cursor, proc_thread_state_char(thread.state));
+    append_char(out, capacity, cursor, ' ');
+    append_decimal(out, capacity, cursor, process.parent_pid);
+    append_char(out, capacity, cursor, ' ');
+    append_decimal(out, capacity, cursor, process.process_group_id);
+    append_char(out, capacity, cursor, ' ');
+    append_decimal(out, capacity, cursor, pid);
+    append_text(out, capacity, cursor, " 0 0 0 0 ");
+    append_decimal(out, capacity, cursor, thread.syscall_count);
+    append_char(out, capacity, cursor, ' ');
+    append_decimal(out, capacity, cursor, thread.run_ticks);
+    append_char(out, capacity, cursor, ' ');
+    append_decimal(out, capacity, cursor, thread.switch_count);
+    append_char(out, capacity, cursor, ' ');
+    append_decimal(out, capacity, cursor, thread.preempt_count);
+    append_text(out, capacity, cursor, " 20 0 1 0 ");
+    append_decimal(out, capacity, cursor, thread.entry);
+    append_char(out, capacity, cursor, ' ');
+    append_decimal(out, capacity, cursor, thread.user_stack_pointer);
     append_char(out, capacity, cursor, '\n');
 }
 
@@ -1045,7 +1202,8 @@ void render_proc_fdinfo_entry(uint64_t pid, uint32_t fd_number, char* out, uint6
 uint64_t render_dynamic_proc_file(const char* normalized, char* out, uint64_t capacity) {
     if (!out || capacity == 0) return 0;
     uint64_t pid = 0;
-    DynamicProcKind kind = parse_dynamic_proc_path(normalized, pid);
+    uint64_t tid = 0;
+    DynamicProcKind kind = parse_dynamic_proc_path(normalized, pid, nullptr, &tid);
     if (kind == DynamicProcKind::PidStatus) {
         render_proc_status(pid, out, capacity);
         uint64_t length = 0;
@@ -1102,6 +1260,18 @@ uint64_t render_dynamic_proc_file(const char* normalized, char* out, uint64_t ca
     }
     if (kind == DynamicProcKind::PidLimits) {
         render_proc_limits(pid, out, capacity);
+        uint64_t length = 0;
+        while (length < capacity && out[length] != 0) ++length;
+        return length;
+    }
+    if (kind == DynamicProcKind::PidTaskTidStatus) {
+        render_proc_task_status(pid, tid, out, capacity);
+        uint64_t length = 0;
+        while (length < capacity && out[length] != 0) ++length;
+        return length;
+    }
+    if (kind == DynamicProcKind::PidTaskTidStat) {
+        render_proc_task_stat(pid, tid, out, capacity);
         uint64_t length = 0;
         while (length < capacity && out[length] != 0) ++length;
         return length;
@@ -2726,6 +2896,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_directory("/proc/mm");
     register_directory("/proc/net");
     register_directory("/proc/self");
+    register_directory("/proc/self/task");
     register_directory("/proc/fs");
     register_directory("/proc/sys");
     register_directory("/proc/sys/kernel");
@@ -3389,7 +3560,9 @@ bool Vfs::copy_directory_entry(const char* path, uint32_t index, hybrid::VfsDire
     if ((!directory || directory->type != NodeType::Directory) &&
         proc_kind != DynamicProcKind::PidDirectory &&
         proc_kind != DynamicProcKind::PidFd &&
-        proc_kind != DynamicProcKind::PidFdinfo) {
+        proc_kind != DynamicProcKind::PidFdinfo &&
+        proc_kind != DynamicProcKind::PidTask &&
+        proc_kind != DynamicProcKind::PidTaskTidDirectory) {
         return false;
     }
     uint32_t seen = 0;
@@ -3425,13 +3598,56 @@ bool Vfs::copy_directory_entry(const char* path, uint32_t index, hybrid::VfsDire
         }
     }
     if (proc_kind == DynamicProcKind::PidDirectory) {
-        const char* names[] = {"status", "stat", "maps", "cmdline", "comm", "environ", "cwd", "exe", "root", "limits", "fd", "fdinfo"};
-        if (index >= 12) return false;
+        const char* names[] = {"status", "stat", "maps", "cmdline", "comm", "environ", "cwd", "exe", "root", "limits", "task", "fd", "fdinfo"};
+        if (index >= 13) return false;
         char entry_path[64]{};
         copy_proc_pid_path(entry_path, proc_pid, names[index]);
-        const bool is_directory = index == 10 || index == 11;
+        const bool is_directory = index == 10 || index == 11 || index == 12;
         out.type = is_directory ? hybrid::VfsNodeType::Directory : hybrid::VfsNodeType::VirtualFile;
         out.flags = is_directory ? hybrid::VfsNodeDirectory : (hybrid::VfsNodeReadable | hybrid::VfsNodeVirtual);
+        out.size = dynamic_proc_file_size(entry_path);
+        out.links = 1;
+        copy_text(out.name, names[index]);
+        copy_path(out.path, entry_path);
+        return true;
+    }
+    if (proc_kind == DynamicProcKind::PidTask) {
+        auto& manager = hk::userspace::userspace_manager();
+        uint32_t seen_thread = 0;
+        for (uint64_t i = 0; i < manager.user_thread_count(); ++i) {
+            hybrid::UserThreadInfo thread{};
+            if (!manager.copy_thread_info(i, thread) || thread.pid != proc_pid) continue;
+            if (seen_thread++ != index) continue;
+            char entry_path[64]{};
+            uint64_t cursor = 0;
+            append_text(entry_path, sizeof(entry_path), cursor, "/proc/");
+            append_decimal(entry_path, sizeof(entry_path), cursor, proc_pid);
+            append_text(entry_path, sizeof(entry_path), cursor, "/task/");
+            append_decimal(entry_path, sizeof(entry_path), cursor, thread.tid);
+            out.type = hybrid::VfsNodeType::Directory;
+            out.flags = hybrid::VfsNodeDirectory;
+            out.size = 0;
+            out.links = 1;
+            copy_text(out.name, basename_of(entry_path));
+            copy_path(out.path, entry_path);
+            return true;
+        }
+    }
+    if (proc_kind == DynamicProcKind::PidTaskTidDirectory) {
+        uint64_t tid = 0;
+        parse_dynamic_proc_path(normalized, proc_pid, nullptr, &tid);
+        const char* names[] = {"status", "stat"};
+        if (index >= 2) return false;
+        char entry_path[64]{};
+        uint64_t cursor = 0;
+        append_text(entry_path, sizeof(entry_path), cursor, "/proc/");
+        append_decimal(entry_path, sizeof(entry_path), cursor, proc_pid);
+        append_text(entry_path, sizeof(entry_path), cursor, "/task/");
+        append_decimal(entry_path, sizeof(entry_path), cursor, tid);
+        append_char(entry_path, sizeof(entry_path), cursor, '/');
+        append_text(entry_path, sizeof(entry_path), cursor, names[index]);
+        out.type = hybrid::VfsNodeType::VirtualFile;
+        out.flags = hybrid::VfsNodeReadable | hybrid::VfsNodeVirtual;
         out.size = dynamic_proc_file_size(entry_path);
         out.links = 1;
         copy_text(out.name, names[index]);
@@ -3538,6 +3754,14 @@ bool Vfs::stat(const char* path, hybrid::VfsStatInfo& out) const {
             copy_path(out.path, normalized);
             return true;
         }
+        if (proc_kind == DynamicProcKind::PidTask || proc_kind == DynamicProcKind::PidTaskTidDirectory) {
+            out.type = hybrid::VfsNodeType::Directory;
+            out.flags = hybrid::VfsNodeDirectory;
+            out.size = 0;
+            out.links = 1;
+            copy_path(out.path, normalized);
+            return true;
+        }
         if (proc_kind == DynamicProcKind::PidStatus || proc_kind == DynamicProcKind::PidStat ||
             proc_kind == DynamicProcKind::PidMaps || proc_kind == DynamicProcKind::PidCmdline ||
             proc_kind == DynamicProcKind::PidComm ||
@@ -3546,6 +3770,8 @@ bool Vfs::stat(const char* path, hybrid::VfsStatInfo& out) const {
             proc_kind == DynamicProcKind::PidExe ||
             proc_kind == DynamicProcKind::PidRoot ||
             proc_kind == DynamicProcKind::PidLimits ||
+            proc_kind == DynamicProcKind::PidTaskTidStatus ||
+            proc_kind == DynamicProcKind::PidTaskTidStat ||
             proc_kind == DynamicProcKind::PidFdEntry ||
             proc_kind == DynamicProcKind::PidFdinfoEntry) {
             out.type = hybrid::VfsNodeType::VirtualFile;
@@ -3821,6 +4047,21 @@ bool self_test() {
     if (vfs().read("/proc/1/fdinfo", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'F' || proc_buffer[3] != 'K') return false;
     if (vfs().read("/proc/1/fdinfo/1", 0, proc_buffer, 4) != 4 || proc_buffer[0] != 'f' || proc_buffer[2] != ':') return false;
     if (vfs().read("/proc/1/limits", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'L' || proc_buffer[5] != '\t') return false;
+    hybrid::VfsStatInfo proc_task_stat{};
+    if (!vfs().stat("/proc/1/task", proc_task_stat) || proc_task_stat.type != hybrid::VfsNodeType::Directory) return false;
+    hybrid::VfsDirectoryEntryInfo proc_task_entry{};
+    if (!vfs().copy_directory_entry("/proc/1/task", 0, proc_task_entry) ||
+        proc_task_entry.type != hybrid::VfsNodeType::Directory || proc_task_entry.name[0] < '0' || proc_task_entry.name[0] > '9') {
+        return false;
+    }
+    char proc_task_status_path[64]{};
+    uint64_t proc_task_cursor = 0;
+    append_text(proc_task_status_path, sizeof(proc_task_status_path), proc_task_cursor, proc_task_entry.path);
+    append_text(proc_task_status_path, sizeof(proc_task_status_path), proc_task_cursor, "/status");
+    if (!vfs().stat(proc_task_status_path, proc_task_stat) || proc_task_stat.type != hybrid::VfsNodeType::VirtualFile ||
+        vfs().read(proc_task_status_path, 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'N' || proc_buffer[4] != ':') {
+        return false;
+    }
     hk::log(hk::LogLevel::Info, "VFS proc virtual file self-test");
     const Node* disk_boot = vfs().find("/disk/bootsector.bin");
     if (!disk_boot || disk_boot->type != NodeType::MemoryFile || disk_boot->size != 512) return false;

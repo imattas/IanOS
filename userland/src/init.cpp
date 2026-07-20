@@ -466,7 +466,7 @@ const char* history_at(uint64_t view) {
 
 void command_help(const char*) {
     shell_line("", "commands: help clear history exit echo status pid ids fgpgid ctx argv env export unset which stat counts spawn jobs fg bg stop usched nextuser uyielddemo upreemptdemo run kill wait reap pwd cd ls cat sh fds ps mem cpus devices fb ticks");
-    shell_line("", "external: hello args cat ls uname hostname free meminfo uptime date rtc cal dmesg kmsg loadavg ps processes cmdline procstat pwd env printenv sysinfo fastfetch sysctl id ids groups ctx echo sleep true false touch append rm cp mv dd wc grep tee mkdir rmdir err stat statfs filesystems vfsstat file lsattr namei tree whoami basename dirname head tail test sort uniq find hexdump readelf sha256sum sha224sum sha512sum sha384sum sha1sum md5sum cmp cksum fold printf strings nl tr sed cut paste rev tac seq expr xargs yes od base64 which sh duptest fds lsof fdinh ln readlink realpath truncate blk mount df du lsblk findmnt mountinfo iostat diskstats partitions lsmem iomem bootinfo fbset lspci lsdev devices irqstat interrupts mmstat buddyinfo heapinfo procvmstat netstat route ip ifconfig ethtool lsdrv lsmod pipeinfo pmap maps pcmdline proccomm procenv procwd procexe procroot procfdinfo proclimits version limits imginfo abi features kill killall pgrep pidof nproc lscpu cpuinfo schedstat scheddebug vmstat top pstree uyield ubusy slowcat burst loop devio tty ttystat stty ttyread clear");
+    shell_line("", "external: hello args cat ls uname hostname free meminfo uptime date rtc cal dmesg kmsg loadavg ps processes cmdline procstat pwd env printenv sysinfo fastfetch sysctl id ids groups ctx echo sleep true false touch append rm cp mv dd wc grep tee mkdir rmdir err stat statfs filesystems vfsstat file lsattr namei tree whoami basename dirname head tail test sort uniq find hexdump readelf sha256sum sha224sum sha512sum sha384sum sha1sum md5sum cmp cksum fold printf strings nl tr sed cut paste rev tac seq expr xargs yes od base64 which sh duptest fds lsof fdinh ln readlink realpath truncate blk mount df du lsblk findmnt mountinfo iostat diskstats partitions lsmem iomem bootinfo fbset lspci lsdev devices irqstat interrupts mmstat buddyinfo heapinfo procvmstat netstat route ip ifconfig ethtool lsdrv lsmod pipeinfo pmap maps pcmdline proccomm procenv procwd procexe procroot procfdinfo proclimits proctask version limits imginfo abi features kill killall pgrep pidof nproc lscpu cpuinfo schedstat scheddebug vmstat top pstree uyield ubusy slowcat burst loop devio tty ttystat stty ttyread clear");
     shell_line("", "editing: arrows history home end delete tab pageup/pagedown scrollback ctrl-c ctrl-z jobs %n %+ wait -n");
 }
 
@@ -1648,7 +1648,7 @@ const ShellCommand kCommands[] = {
 const char* const kExternalCommands[] = {
     "hello", "args", "cat", "ls", "uname", "hostname", "free", "meminfo", "uptime", "date", "rtc", "cal", "dmesg", "kmsg", "loadavg", "ps", "processes", "cmdline", "procstat", "pwd", "env",
     "sysinfo", "fastfetch", "sysctl", "id", "ids", "groups", "ctx", "echo", "sleep", "true", "false", "touch", "append", "rm", "cp", "mv", "dd", "wc", "grep", "tee", "mkdir", "rmdir", "err", "printenv",
-    "stat", "statfs", "filesystems", "vfsstat", "file", "lsattr", "namei", "tree", "whoami", "basename", "dirname", "head", "tail", "test", "sort", "uniq", "find", "hexdump", "readelf", "sha256sum", "sha224sum", "sha512sum", "sha384sum", "sha1sum", "md5sum", "cmp", "cksum", "fold", "printf", "strings", "nl", "tr", "sed", "cut", "paste", "rev", "tac", "seq", "expr", "xargs", "yes", "od", "base64", "which", "sh", "duptest", "fds", "lsof", "fdinh", "ln", "readlink", "realpath", "truncate", "blk", "mount", "df", "du", "lsblk", "findmnt", "mountinfo", "iostat", "diskstats", "partitions", "lsmem", "iomem", "bootinfo", "fbset", "lspci", "lsdev", "devices", "irqstat", "interrupts", "mmstat", "buddyinfo", "heapinfo", "procvmstat", "netstat", "route", "ip", "ifconfig", "ethtool", "lsdrv", "lsmod", "pipeinfo", "pmap", "maps", "pcmdline", "proccomm", "procenv", "procwd", "procexe", "procroot", "procfdinfo", "proclimits", "version", "limits", "imginfo", "abi", "features", "kill", "killall", "pgrep", "pidof", "nproc", "lscpu", "cpuinfo", "schedstat", "scheddebug", "vmstat", "top", "pstree", "uyield", "ubusy", "slowcat", "burst", "loop", "devio", "tty", "ttystat", "stty", "ttyread", "clear",
+    "stat", "statfs", "filesystems", "vfsstat", "file", "lsattr", "namei", "tree", "whoami", "basename", "dirname", "head", "tail", "test", "sort", "uniq", "find", "hexdump", "readelf", "sha256sum", "sha224sum", "sha512sum", "sha384sum", "sha1sum", "md5sum", "cmp", "cksum", "fold", "printf", "strings", "nl", "tr", "sed", "cut", "paste", "rev", "tac", "seq", "expr", "xargs", "yes", "od", "base64", "which", "sh", "duptest", "fds", "lsof", "fdinh", "ln", "readlink", "realpath", "truncate", "blk", "mount", "df", "du", "lsblk", "findmnt", "mountinfo", "iostat", "diskstats", "partitions", "lsmem", "iomem", "bootinfo", "fbset", "lspci", "lsdev", "devices", "irqstat", "interrupts", "mmstat", "buddyinfo", "heapinfo", "procvmstat", "netstat", "route", "ip", "ifconfig", "ethtool", "lsdrv", "lsmod", "pipeinfo", "pmap", "maps", "pcmdline", "proccomm", "procenv", "procwd", "procexe", "procroot", "procfdinfo", "proclimits", "proctask", "version", "limits", "imginfo", "abi", "features", "kill", "killall", "pgrep", "pidof", "nproc", "lscpu", "cpuinfo", "schedstat", "scheddebug", "vmstat", "top", "pstree", "uyield", "ubusy", "slowcat", "burst", "loop", "devio", "tty", "ttystat", "stty", "ttyread", "clear",
 };
 
 bool starts_with(const char* text, const char* prefix) {
@@ -2405,6 +2405,7 @@ void run_boot_shell_script() {
     run_command("stat", "/proc/self/fd");
     run_command("stat", "/proc/self/fdinfo");
     run_command("stat", "/proc/self/limits");
+    run_command("stat", "/proc/self/task");
     run_command("stat", "/proc/1");
     run_command("stat", "/proc/1/status");
     run_command("stat", "/proc/1/stat");
@@ -2419,6 +2420,10 @@ void run_boot_shell_script() {
     run_command("stat", "/proc/1/fdinfo");
     run_command("stat", "/proc/1/fdinfo/1");
     run_command("stat", "/proc/1/limits");
+    run_command("stat", "/proc/1/task");
+    run_command("stat", "/proc/1/task/1");
+    run_command("stat", "/proc/1/task/1/status");
+    run_command("stat", "/proc/1/task/1/stat");
     run_command("stat", "/disk/bootsector.bin");
     run_command("stat", "/mnt/boot/kernel.elf");
     run_command("stat", "/mnt/boot/bin/hello.elf");
@@ -2520,10 +2525,13 @@ void run_boot_shell_script() {
     run_command("/bin/ls.elf", "/proc/cpu");
     run_command("/bin/ls.elf", "/proc/net");
     run_command("/bin/ls.elf", "/proc/self");
+    run_command("/bin/ls.elf", "/proc/self/task");
     run_command("/bin/ls.elf", "/proc/fs");
     run_command("/bin/ls.elf", "/proc/sys");
     run_command("/bin/ls.elf", "/proc/sys/kernel");
     run_command("/bin/ls.elf", "/proc/1");
+    run_command("/bin/ls.elf", "/proc/1/task");
+    run_command("/bin/ls.elf", "/proc/1/task/1");
     run_command("/bin/ls.elf", "/mnt/boot/bin");
     run_command("/bin/ls.elf", "/mnt/boot/user");
     run_command("/bin/cat.elf", "/etc/os-release");
@@ -2754,6 +2762,9 @@ void run_boot_shell_script() {
     run_command("/bin/procfdinfo.elf", "1 1");
     run_command("/bin/proclimits.elf");
     run_command("/bin/proclimits.elf", "1");
+    run_command("/bin/proctask.elf");
+    run_command("/bin/proctask.elf", "1");
+    run_command("/bin/proctask.elf", "1 1");
     run_command("/bin/version.elf");
     run_command("/bin/limits.elf");
     run_command("/bin/imginfo.elf");
