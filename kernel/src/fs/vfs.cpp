@@ -639,6 +639,7 @@ enum class DynamicProcKind : uint8_t {
     PidCwd,
     PidExe,
     PidRoot,
+    PidLimits,
     PidFd,
     PidFdEntry,
     PidFdinfo,
@@ -704,6 +705,7 @@ DynamicProcKind parse_dynamic_proc_path(const char* normalized, uint64_t& pid, u
     if (text_equal(normalized + cursor, "cwd")) return DynamicProcKind::PidCwd;
     if (text_equal(normalized + cursor, "exe")) return DynamicProcKind::PidExe;
     if (text_equal(normalized + cursor, "root")) return DynamicProcKind::PidRoot;
+    if (text_equal(normalized + cursor, "limits")) return DynamicProcKind::PidLimits;
     if (text_equal(normalized + cursor, "fd")) return DynamicProcKind::PidFd;
     if (normalized[cursor] == 'f' && normalized[cursor + 1] == 'd' && normalized[cursor + 2] == '/') {
         cursor += 3;
@@ -924,6 +926,44 @@ void render_proc_root(uint64_t pid, char* out, uint64_t capacity) {
     append_text(out, capacity, cursor, "/\n");
 }
 
+void append_proc_limits_row(char* out, uint64_t capacity, uint64_t& cursor, const char* name,
+                            uint64_t soft, uint64_t hard, const char* units) {
+    append_text(out, capacity, cursor, name);
+    append_char(out, capacity, cursor, '\t');
+    append_decimal(out, capacity, cursor, soft);
+    append_char(out, capacity, cursor, '\t');
+    append_decimal(out, capacity, cursor, hard);
+    append_char(out, capacity, cursor, '\t');
+    append_text(out, capacity, cursor, units);
+    append_char(out, capacity, cursor, '\n');
+}
+
+void render_proc_limits(uint64_t pid, char* out, uint64_t capacity) {
+    uint64_t cursor = 0;
+    out[0] = 0;
+    hybrid::ProcessInfo process{};
+    if (!process_info_by_pid(pid, process)) return;
+    append_text(out, capacity, cursor, "Limit\tSoft Limit\tHard Limit\tUnits\n");
+    append_proc_limits_row(out, capacity, cursor, "Max open files", hk::userspace::kMaxProcessFileDescriptors,
+                           hk::userspace::kMaxProcessFileDescriptors, "files");
+    append_proc_limits_row(out, capacity, cursor, "Max address pages", hk::userspace::kMaxOwnedUserPages,
+                           hk::userspace::kMaxOwnedUserPages, "pages");
+    append_proc_limits_row(out, capacity, cursor, "Current address pages", process.owned_page_count,
+                           hk::userspace::kMaxOwnedUserPages, "pages");
+    append_proc_limits_row(out, capacity, cursor, "Max stack size",
+                           hk::userspace::kDefaultUserStackPages * hk::mm::kPageSize,
+                           hk::userspace::kDefaultUserStackPages * hk::mm::kPageSize, "bytes");
+    append_proc_limits_row(out, capacity, cursor, "Max argv entries", hk::userspace::kMaxProcessArguments,
+                           hk::userspace::kMaxProcessArguments, "entries");
+    append_proc_limits_row(out, capacity, cursor, "Max argv bytes", hk::userspace::kMaxArgumentLength,
+                           hk::userspace::kMaxArgumentLength, "bytes");
+    append_proc_limits_row(out, capacity, cursor, "Max env entries", hk::userspace::kMaxEnvironmentEntries,
+                           hk::userspace::kMaxEnvironmentEntries, "entries");
+    append_proc_limits_row(out, capacity, cursor, "Max pipe size", hk::userspace::kPipeCapacity,
+                           hk::userspace::kPipeCapacity, "bytes");
+    append_proc_limits_row(out, capacity, cursor, "Max CPUs", hk::cpu::kMaxCpus, hk::cpu::kMaxCpus, "cpus");
+}
+
 void render_proc_fd(uint64_t pid, char* out, uint64_t capacity) {
     uint64_t cursor = 0;
     out[0] = 0;
@@ -1012,6 +1052,12 @@ uint64_t render_dynamic_proc_file(const char* normalized, char* out, uint64_t ca
     }
     if (kind == DynamicProcKind::PidRoot) {
         render_proc_root(pid, out, capacity);
+        uint64_t length = 0;
+        while (length < capacity && out[length] != 0) ++length;
+        return length;
+    }
+    if (kind == DynamicProcKind::PidLimits) {
+        render_proc_limits(pid, out, capacity);
         uint64_t length = 0;
         while (length < capacity && out[length] != 0) ++length;
         return length;
@@ -1422,6 +1468,17 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
             while (cursor < capacity && out[cursor] != 0) ++cursor;
         } else {
             append_text(out, capacity, cursor, "FD KIND POS TARGET\n");
+        }
+        break;
+    }
+    case VirtualFileKind::ProcSelfLimits: {
+        uint64_t pid = hk::userspace::userspace_manager().current_pid();
+        if (pid != 0) {
+            render_proc_limits(pid, out, capacity);
+            cursor = 0;
+            while (cursor < capacity && out[cursor] != 0) ++cursor;
+        } else {
+            append_text(out, capacity, cursor, "Limit\tSoft Limit\tHard Limit\tUnits\n");
         }
         break;
     }
@@ -2676,6 +2733,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/self/root", VirtualFileKind::ProcSelfRoot);
     register_virtual_file("/proc/self/fd", VirtualFileKind::ProcSelfFd);
     register_virtual_file("/proc/self/fdinfo", VirtualFileKind::ProcSelfFdinfo);
+    register_virtual_file("/proc/self/limits", VirtualFileKind::ProcSelfLimits);
     if (boot.kernel_physical_base != 0 && boot.kernel_physical_end > boot.kernel_physical_base) {
         register_memory_file("/boot/kernel.elf", boot.kernel_physical_base, boot.kernel_physical_end - boot.kernel_physical_base);
     }
@@ -3305,11 +3363,11 @@ bool Vfs::copy_directory_entry(const char* path, uint32_t index, hybrid::VfsDire
         }
     }
     if (proc_kind == DynamicProcKind::PidDirectory) {
-        const char* names[] = {"status", "stat", "maps", "cmdline", "environ", "cwd", "exe", "root", "fd", "fdinfo"};
-        if (index >= 10) return false;
+        const char* names[] = {"status", "stat", "maps", "cmdline", "environ", "cwd", "exe", "root", "limits", "fd", "fdinfo"};
+        if (index >= 11) return false;
         char entry_path[64]{};
         copy_proc_pid_path(entry_path, proc_pid, names[index]);
-        const bool is_directory = index == 8 || index == 9;
+        const bool is_directory = index == 9 || index == 10;
         out.type = is_directory ? hybrid::VfsNodeType::Directory : hybrid::VfsNodeType::VirtualFile;
         out.flags = is_directory ? hybrid::VfsNodeDirectory : (hybrid::VfsNodeReadable | hybrid::VfsNodeVirtual);
         out.size = dynamic_proc_file_size(entry_path);
@@ -3424,6 +3482,7 @@ bool Vfs::stat(const char* path, hybrid::VfsStatInfo& out) const {
             proc_kind == DynamicProcKind::PidCwd ||
             proc_kind == DynamicProcKind::PidExe ||
             proc_kind == DynamicProcKind::PidRoot ||
+            proc_kind == DynamicProcKind::PidLimits ||
             proc_kind == DynamicProcKind::PidFdEntry ||
             proc_kind == DynamicProcKind::PidFdinfoEntry) {
             out.type = hybrid::VfsNodeType::VirtualFile;
@@ -3527,6 +3586,7 @@ bool self_test() {
     const Node* proc_self_root = vfs().find("/proc/self/root");
     const Node* proc_self_fd = vfs().find("/proc/self/fd");
     const Node* proc_self_fdinfo = vfs().find("/proc/self/fdinfo");
+    const Node* proc_self_limits = vfs().find("/proc/self/limits");
     if (!proc_block || proc_block->type != NodeType::Directory ||
         !proc_driver || proc_driver->type != NodeType::Directory ||
         !proc_pci || proc_pci->type != NodeType::Directory ||
@@ -3590,7 +3650,8 @@ bool self_test() {
         !proc_self_exe || proc_self_exe->type != NodeType::VirtualFile || proc_self_exe->virtual_kind != VirtualFileKind::ProcSelfExe ||
         !proc_self_root || proc_self_root->type != NodeType::VirtualFile || proc_self_root->virtual_kind != VirtualFileKind::ProcSelfRoot ||
         !proc_self_fd || proc_self_fd->type != NodeType::VirtualFile || proc_self_fd->virtual_kind != VirtualFileKind::ProcSelfFd ||
-        !proc_self_fdinfo || proc_self_fdinfo->type != NodeType::VirtualFile || proc_self_fdinfo->virtual_kind != VirtualFileKind::ProcSelfFdinfo) {
+        !proc_self_fdinfo || proc_self_fdinfo->type != NodeType::VirtualFile || proc_self_fdinfo->virtual_kind != VirtualFileKind::ProcSelfFdinfo ||
+        !proc_self_limits || proc_self_limits->type != NodeType::VirtualFile || proc_self_limits->virtual_kind != VirtualFileKind::ProcSelfLimits) {
         return false;
     }
     char proc_buffer[32];
@@ -3676,6 +3737,7 @@ bool self_test() {
     if (vfs().read("/proc/self/root", 0, proc_buffer, 2) != 2 || proc_buffer[0] != '/' || proc_buffer[1] != '\n') return false;
     if (vfs().read("/proc/self/fd", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'F' || proc_buffer[3] != 'K') return false;
     if (vfs().read("/proc/self/fdinfo", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'F' || proc_buffer[3] != 'K') return false;
+    if (vfs().read("/proc/self/limits", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'L' || proc_buffer[5] != '\t') return false;
     hybrid::VfsStatInfo proc_init_stat{};
     if (!vfs().stat("/proc/1", proc_init_stat) || proc_init_stat.type != hybrid::VfsNodeType::Directory) return false;
     if (vfs().read("/proc/1/status", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'N' || proc_buffer[4] != ':') return false;
@@ -3689,6 +3751,7 @@ bool self_test() {
     if (vfs().read("/proc/1/fd", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'F' || proc_buffer[3] != 'K') return false;
     if (vfs().read("/proc/1/fdinfo", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'F' || proc_buffer[3] != 'K') return false;
     if (vfs().read("/proc/1/fdinfo/1", 0, proc_buffer, 4) != 4 || proc_buffer[0] != 'f' || proc_buffer[2] != ':') return false;
+    if (vfs().read("/proc/1/limits", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'L' || proc_buffer[5] != '\t') return false;
     hk::log(hk::LogLevel::Info, "VFS proc virtual file self-test");
     const Node* disk_boot = vfs().find("/disk/bootsector.bin");
     if (!disk_boot || disk_boot->type != NodeType::MemoryFile || disk_boot->size != 512) return false;
