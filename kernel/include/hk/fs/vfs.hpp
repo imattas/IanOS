@@ -30,6 +30,8 @@ enum class VirtualFileKind : uint8_t {
     ProcSelfFdinfo,
     ProcSelfLimits,
     ProcMounts,
+    ProcMountinfo,
+    ProcSelfMountinfo,
     ProcFilesystems,
     ProcVfsStats,
     ProcBlockBootdisk,

@@ -589,6 +589,33 @@ void append_mount_line(char* out, uint64_t capacity, uint64_t& cursor, const hyb
     append_text(out, capacity, cursor, " 0 0\n");
 }
 
+void append_mountinfo_line(char* out, uint64_t capacity, uint64_t& cursor, const hybrid::MountInfo& mount, uint64_t mount_id) {
+    append_decimal(out, capacity, cursor, mount_id);
+    append_char(out, capacity, cursor, ' ');
+    append_decimal(out, capacity, cursor, mount_id == 1 ? 0 : 1);
+    append_text(out, capacity, cursor, " 0:");
+    append_decimal(out, capacity, cursor, mount_id);
+    append_text(out, capacity, cursor, " / ");
+    append_text(out, capacity, cursor, mount.path);
+    append_char(out, capacity, cursor, ' ');
+    append_mount_options(out, capacity, cursor, mount.flags);
+    append_text(out, capacity, cursor, " - ");
+    append_text(out, capacity, cursor, mount.fs_type);
+    append_char(out, capacity, cursor, ' ');
+    append_text(out, capacity, cursor, mount.source);
+    append_char(out, capacity, cursor, ' ');
+    append_mount_options(out, capacity, cursor, mount.flags);
+    append_char(out, capacity, cursor, '\n');
+}
+
+void render_proc_mountinfo(char* out, uint64_t capacity, uint64_t& cursor) {
+    auto& fs = vfs();
+    for (uint32_t i = 0; i < fs.mount_count(); ++i) {
+        hybrid::MountInfo mount{};
+        if (fs.copy_mount_info(i, mount)) append_mountinfo_line(out, capacity, cursor, mount, static_cast<uint64_t>(i) + 1);
+    }
+}
+
 bool append_decimal_text(char* out, uint64_t capacity, uint64_t& cursor, uint64_t value) {
     uint64_t before = cursor;
     append_decimal(out, capacity, cursor, value);
@@ -1490,6 +1517,10 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         }
         break;
     }
+    case VirtualFileKind::ProcMountinfo:
+    case VirtualFileKind::ProcSelfMountinfo:
+        render_proc_mountinfo(out, capacity, cursor);
+        break;
     case VirtualFileKind::ProcFilesystems: {
         append_text(out, capacity, cursor, "nodev\tvfs\n");
         append_text(out, capacity, cursor, "nodev\tproc\n");
@@ -2692,6 +2723,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/processes", VirtualFileKind::ProcProcesses);
     register_virtual_file("/proc/modules", VirtualFileKind::ProcModules);
     register_virtual_file("/proc/mounts", VirtualFileKind::ProcMounts);
+    register_virtual_file("/proc/mountinfo", VirtualFileKind::ProcMountinfo);
     register_virtual_file("/proc/filesystems", VirtualFileKind::ProcFilesystems);
     register_virtual_file("/proc/fs/vfs", VirtualFileKind::ProcVfsStats);
     register_virtual_file("/proc/block/bootdisk", VirtualFileKind::ProcBlockBootdisk);
@@ -2734,6 +2766,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/self/fd", VirtualFileKind::ProcSelfFd);
     register_virtual_file("/proc/self/fdinfo", VirtualFileKind::ProcSelfFdinfo);
     register_virtual_file("/proc/self/limits", VirtualFileKind::ProcSelfLimits);
+    register_virtual_file("/proc/self/mountinfo", VirtualFileKind::ProcSelfMountinfo);
     if (boot.kernel_physical_base != 0 && boot.kernel_physical_end > boot.kernel_physical_base) {
         register_memory_file("/boot/kernel.elf", boot.kernel_physical_base, boot.kernel_physical_end - boot.kernel_physical_base);
     }
@@ -3563,6 +3596,7 @@ bool self_test() {
     const Node* proc_processes = vfs().find("/proc/processes");
     const Node* proc_modules = vfs().find("/proc/modules");
     const Node* proc_mounts = vfs().find("/proc/mounts");
+    const Node* proc_mountinfo = vfs().find("/proc/mountinfo");
     const Node* proc_filesystems = vfs().find("/proc/filesystems");
     const Node* proc_fs = vfs().find("/proc/fs");
     const Node* proc_vfs = vfs().find("/proc/fs/vfs");
@@ -3587,6 +3621,7 @@ bool self_test() {
     const Node* proc_self_fd = vfs().find("/proc/self/fd");
     const Node* proc_self_fdinfo = vfs().find("/proc/self/fdinfo");
     const Node* proc_self_limits = vfs().find("/proc/self/limits");
+    const Node* proc_self_mountinfo = vfs().find("/proc/self/mountinfo");
     if (!proc_block || proc_block->type != NodeType::Directory ||
         !proc_driver || proc_driver->type != NodeType::Directory ||
         !proc_pci || proc_pci->type != NodeType::Directory ||
@@ -3609,6 +3644,7 @@ bool self_test() {
         !proc_processes || proc_processes->type != NodeType::VirtualFile || proc_processes->virtual_kind != VirtualFileKind::ProcProcesses ||
         !proc_modules || proc_modules->type != NodeType::VirtualFile || proc_modules->virtual_kind != VirtualFileKind::ProcModules ||
         !proc_mounts || proc_mounts->type != NodeType::VirtualFile || proc_mounts->virtual_kind != VirtualFileKind::ProcMounts ||
+        !proc_mountinfo || proc_mountinfo->type != NodeType::VirtualFile || proc_mountinfo->virtual_kind != VirtualFileKind::ProcMountinfo ||
         !proc_filesystems || proc_filesystems->type != NodeType::VirtualFile || proc_filesystems->virtual_kind != VirtualFileKind::ProcFilesystems ||
         !proc_vfs || proc_vfs->type != NodeType::VirtualFile || proc_vfs->virtual_kind != VirtualFileKind::ProcVfsStats ||
         !proc_block_bootdisk || proc_block_bootdisk->type != NodeType::VirtualFile || proc_block_bootdisk->virtual_kind != VirtualFileKind::ProcBlockBootdisk ||
@@ -3651,7 +3687,8 @@ bool self_test() {
         !proc_self_root || proc_self_root->type != NodeType::VirtualFile || proc_self_root->virtual_kind != VirtualFileKind::ProcSelfRoot ||
         !proc_self_fd || proc_self_fd->type != NodeType::VirtualFile || proc_self_fd->virtual_kind != VirtualFileKind::ProcSelfFd ||
         !proc_self_fdinfo || proc_self_fdinfo->type != NodeType::VirtualFile || proc_self_fdinfo->virtual_kind != VirtualFileKind::ProcSelfFdinfo ||
-        !proc_self_limits || proc_self_limits->type != NodeType::VirtualFile || proc_self_limits->virtual_kind != VirtualFileKind::ProcSelfLimits) {
+        !proc_self_limits || proc_self_limits->type != NodeType::VirtualFile || proc_self_limits->virtual_kind != VirtualFileKind::ProcSelfLimits ||
+        !proc_self_mountinfo || proc_self_mountinfo->type != NodeType::VirtualFile || proc_self_mountinfo->virtual_kind != VirtualFileKind::ProcSelfMountinfo) {
         return false;
     }
     char proc_buffer[32];

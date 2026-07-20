@@ -128,6 +128,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\du.elf", "/bin/du.elf"},
     {L"\\bin\\lsblk.elf", "/bin/lsblk.elf"},
     {L"\\bin\\findmnt.elf", "/bin/findmnt.elf"},
+    {L"\\bin\\mountinfo.elf", "/bin/mountinfo.elf"},
     {L"\\bin\\iostat.elf", "/bin/iostat.elf"},
     {L"\\bin\\diskstats.elf", "/bin/diskstats.elf"},
     {L"\\bin\\partitions.elf", "/bin/partitions.elf"},
