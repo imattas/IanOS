@@ -739,6 +739,30 @@ Result dispatch(uint64_t number, uint64_t arg0, uint64_t arg1, uint64_t arg2, ui
         out->mounted_fat_path_capacity = hk::fs::mounted_fat_path_capacity();
         return {1, kErrorNone};
     }
+    case Number::GetAbiInfo: {
+        auto* out = reinterpret_cast<hybrid::AbiInfo*>(arg0);
+        if (!out || !user_buffer_writable(reinterpret_cast<char*>(out), sizeof(*out))) return {0, kErrorInvalidPointer};
+        out->abi_version = hybrid::kSyscallAbiVersion;
+        out->boot_info_version = hybrid::kBootInfoVersion;
+        out->syscall_max_number = hybrid::kSyscallMaxNumber;
+        out->syscall_result_size = sizeof(hybrid::SyscallResult);
+        out->boot_info_size = sizeof(hybrid::BootInfo);
+        out->framebuffer_info_size = sizeof(hybrid::FramebufferInfo);
+        out->memory_region_size = sizeof(hybrid::MemoryRegion);
+        out->boot_module_size = sizeof(hybrid::BootModule);
+        out->system_info_size = sizeof(hybrid::SystemInfo);
+        out->limits_info_size = sizeof(hybrid::LimitsInfo);
+        out->abi_info_size = sizeof(hybrid::AbiInfo);
+        out->process_info_size = sizeof(hybrid::ProcessInfo);
+        out->user_thread_info_size = sizeof(hybrid::UserThreadInfo);
+        out->vfs_node_info_size = sizeof(hybrid::VfsNodeInfo);
+        out->vfs_stat_info_size = sizeof(hybrid::VfsStatInfo);
+        out->mount_info_size = sizeof(hybrid::MountInfo);
+        out->file_descriptor_info_size = sizeof(hybrid::FileDescriptorInfo);
+        out->pipe_info_size = sizeof(hybrid::PipeInfo);
+        out->block_device_info_size = sizeof(hybrid::BlockDeviceInfo);
+        return {1, kErrorNone};
+    }
     case Number::ReadKernelLog: {
         auto* out = reinterpret_cast<char*>(arg0);
         if (!user_buffer_writable(out, arg1)) return {0, kErrorInvalidPointer};
@@ -1337,6 +1361,22 @@ bool self_test() {
         return false;
     }
     hk::log(hk::LogLevel::Info, "syscall limits info self-test");
+    hybrid::AbiInfo abi_info{};
+    auto abi_result = dispatch(static_cast<uint64_t>(Number::GetAbiInfo), reinterpret_cast<uint64_t>(&abi_info), 0, 0, 0);
+    if (abi_result.error != kErrorNone || abi_result.value != 1 ||
+        abi_info.abi_version != hybrid::kSyscallAbiVersion ||
+        abi_info.boot_info_version != hybrid::kBootInfoVersion ||
+        abi_info.syscall_max_number != hybrid::kSyscallMaxNumber ||
+        abi_info.boot_info_size != sizeof(hybrid::BootInfo) ||
+        abi_info.abi_info_size != sizeof(hybrid::AbiInfo) ||
+        abi_info.system_info_size != sizeof(hybrid::SystemInfo) ||
+        abi_info.limits_info_size != sizeof(hybrid::LimitsInfo)) {
+        hk::log_hex(hk::LogLevel::Error, "syscall self-test abi-info error", abi_result.error);
+        hk::log_hex(hk::LogLevel::Error, "syscall self-test abi-info value", abi_result.value);
+        hk::log_hex(hk::LogLevel::Error, "syscall self-test abi max", abi_info.syscall_max_number);
+        return false;
+    }
+    hk::log(hk::LogLevel::Info, "syscall abi info self-test");
     char kernel_log_sample[128]{};
     auto kernel_log_read = dispatch(static_cast<uint64_t>(Number::ReadKernelLog), reinterpret_cast<uint64_t>(kernel_log_sample), sizeof(kernel_log_sample), 0, 0);
     if (kernel_log_read.error != kErrorNone || kernel_log_read.value == 0) {

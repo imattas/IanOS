@@ -101,7 +101,11 @@ enum class SyscallNumber : uint64_t {
     ReadDirectory = 95,
     ReadLink = 96,
     GetLimitsInfo = 97,
+    GetAbiInfo = 98,
 };
+
+constexpr uint32_t kSyscallAbiVersion = 1;
+constexpr uint64_t kSyscallMaxNumber = static_cast<uint64_t>(SyscallNumber::GetAbiInfo);
 
 constexpr uint32_t kStdinFd = 0;
 constexpr uint32_t kStdoutFd = 1;
@@ -476,6 +480,28 @@ struct [[gnu::packed]] LimitsInfo {
     uint64_t max_cpus;
     uint64_t pmm_bitmap_pages;
     uint64_t mounted_fat_path_capacity;
+};
+
+struct [[gnu::packed]] AbiInfo {
+    uint32_t abi_version;
+    uint32_t boot_info_version;
+    uint64_t syscall_max_number;
+    uint64_t syscall_result_size;
+    uint64_t boot_info_size;
+    uint64_t framebuffer_info_size;
+    uint64_t memory_region_size;
+    uint64_t boot_module_size;
+    uint64_t system_info_size;
+    uint64_t limits_info_size;
+    uint64_t abi_info_size;
+    uint64_t process_info_size;
+    uint64_t user_thread_info_size;
+    uint64_t vfs_node_info_size;
+    uint64_t vfs_stat_info_size;
+    uint64_t mount_info_size;
+    uint64_t file_descriptor_info_size;
+    uint64_t pipe_info_size;
+    uint64_t block_device_info_size;
 };
 
 constexpr uint64_t kSyscallErrorNone = 0;

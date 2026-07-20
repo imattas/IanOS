@@ -261,6 +261,9 @@ coverage, and boot FAT path tracking alongside selected live counts.
 `/bin/imginfo.elf` inspects the `/mnt/boot` FAT mount from userspace, reporting
 mounted payload bytes, node count, boot module count, and key boot artifact
 sizes so image contents can be distinguished from the fixed host disk image.
+`/bin/abi.elf` calls the kernel ABI-info syscall and reports the syscall ABI
+version, maximum syscall number, BootInfo version, and shared userspace/kernel
+structure sizes so layout drift is visible from a normal user process.
 `/bin/kmsg.elf` reads `/proc/kmsg` through ordinary VFS open/read syscalls and
 streams the retained kernel ring buffer with byte and line counters, while
 `/bin/dmesg.elf` continues to exercise the direct kernel-log syscall.
