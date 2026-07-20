@@ -264,6 +264,8 @@ sizes so image contents can be distinguished from the fixed host disk image.
 `/bin/abi.elf` calls the kernel ABI-info syscall and reports the syscall ABI
 version, maximum syscall number, BootInfo version, and shared userspace/kernel
 structure sizes so layout drift is visible from a normal user process.
+The same layout contract is exposed through `/proc/abi`, giving shell tools a
+plain VFS path for ABI version and structure-size checks.
 `/bin/features.elf` reads the kernel feature-info syscall and reports the
 stable subsystem capability bitmap plus named feature rows for boot, memory,
 VFS, userspace, scheduler, SMP/APIC, PCI/storage/network, and terminal support.

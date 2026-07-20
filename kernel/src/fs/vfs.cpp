@@ -1772,6 +1772,49 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         }
         break;
     }
+    case VirtualFileKind::ProcAbi:
+        append_text(out, capacity, cursor, "abi_version ");
+        append_hex(out, capacity, cursor, hybrid::kSyscallAbiVersion);
+        append_text(out, capacity, cursor, "\nbootinfo_version ");
+        append_hex(out, capacity, cursor, hybrid::kBootInfoVersion);
+        append_text(out, capacity, cursor, "\nsyscall_max ");
+        append_hex(out, capacity, cursor, hybrid::kSyscallMaxNumber);
+        append_text(out, capacity, cursor, "\nsyscall_result_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::SyscallResult));
+        append_text(out, capacity, cursor, "\nbootinfo_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::BootInfo));
+        append_text(out, capacity, cursor, "\nframebuffer_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::FramebufferInfo));
+        append_text(out, capacity, cursor, "\nmemory_region_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::MemoryRegion));
+        append_text(out, capacity, cursor, "\nboot_module_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::BootModule));
+        append_text(out, capacity, cursor, "\nsystem_info_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::SystemInfo));
+        append_text(out, capacity, cursor, "\nlimits_info_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::LimitsInfo));
+        append_text(out, capacity, cursor, "\nabi_info_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::AbiInfo));
+        append_text(out, capacity, cursor, "\nprocess_info_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::ProcessInfo));
+        append_text(out, capacity, cursor, "\nthread_info_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::UserThreadInfo));
+        append_text(out, capacity, cursor, "\nvfs_node_info_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::VfsNodeInfo));
+        append_text(out, capacity, cursor, "\nvfs_stat_info_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::VfsStatInfo));
+        append_text(out, capacity, cursor, "\nmount_info_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::MountInfo));
+        append_text(out, capacity, cursor, "\nfd_info_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::FileDescriptorInfo));
+        append_text(out, capacity, cursor, "\npipe_info_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::PipeInfo));
+        append_text(out, capacity, cursor, "\nblock_device_info_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::BlockDeviceInfo));
+        append_text(out, capacity, cursor, "\nfeature_info_size ");
+        append_hex(out, capacity, cursor, sizeof(hybrid::FeatureInfo));
+        append_char(out, capacity, cursor, '\n');
+        break;
     case VirtualFileKind::ProcBootinfo: {
         const auto& boot = hk::boot::retained_boot_info();
         append_text(out, capacity, cursor, "magic ");
@@ -2238,6 +2281,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/net/route", VirtualFileKind::ProcNetRoute);
     register_virtual_file("/proc/bootinfo", VirtualFileKind::ProcBootinfo);
     register_virtual_file("/proc/features", VirtualFileKind::ProcFeatures);
+    register_virtual_file("/proc/abi", VirtualFileKind::ProcAbi);
     register_virtual_file("/proc/cmdline", VirtualFileKind::ProcCmdline);
     register_virtual_file("/proc/sys/kernel/hostname", VirtualFileKind::ProcHostname);
     register_virtual_file("/proc/sys/kernel/ostype", VirtualFileKind::ProcOstype);
@@ -3039,6 +3083,7 @@ bool self_test() {
     const Node* proc_vfs = vfs().find("/proc/fs/vfs");
     const Node* proc_bootinfo = vfs().find("/proc/bootinfo");
     const Node* proc_features = vfs().find("/proc/features");
+    const Node* proc_abi = vfs().find("/proc/abi");
     const Node* proc_cmdline = vfs().find("/proc/cmdline");
     const Node* proc_sys = vfs().find("/proc/sys");
     const Node* proc_sys_kernel = vfs().find("/proc/sys/kernel");
@@ -3096,6 +3141,7 @@ bool self_test() {
         !proc_net_route || proc_net_route->type != NodeType::VirtualFile || proc_net_route->virtual_kind != VirtualFileKind::ProcNetRoute ||
         !proc_bootinfo || proc_bootinfo->type != NodeType::VirtualFile || proc_bootinfo->virtual_kind != VirtualFileKind::ProcBootinfo ||
         !proc_features || proc_features->type != NodeType::VirtualFile || proc_features->virtual_kind != VirtualFileKind::ProcFeatures ||
+        !proc_abi || proc_abi->type != NodeType::VirtualFile || proc_abi->virtual_kind != VirtualFileKind::ProcAbi ||
         !proc_cmdline || proc_cmdline->type != NodeType::VirtualFile || proc_cmdline->virtual_kind != VirtualFileKind::ProcCmdline ||
         !proc_hostname || proc_hostname->type != NodeType::VirtualFile || proc_hostname->virtual_kind != VirtualFileKind::ProcHostname ||
         !proc_ostype || proc_ostype->type != NodeType::VirtualFile || proc_ostype->virtual_kind != VirtualFileKind::ProcOstype ||
@@ -3120,6 +3166,7 @@ bool self_test() {
     if (vfs().read("/proc/modules", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'N' || proc_buffer[5] != 'S') return false;
     if (vfs().read("/proc/bootinfo", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'm' || proc_buffer[5] != ' ') return false;
     if (vfs().read("/proc/features", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'f' || proc_buffer[5] != ' ') return false;
+    if (vfs().read("/proc/abi", 0, proc_buffer, 11) != 11 || proc_buffer[0] != 'a' || proc_buffer[10] != 'n') return false;
     if (vfs().read("/proc/stat", 0, proc_buffer, 4) != 4 || proc_buffer[0] != 'c' || proc_buffer[3] != ' ') return false;
     if (vfs().read("/proc/mounts", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'b' || proc_buffer[5] != 'm') return false;
     if (vfs().read("/proc/filesystems", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'n' || proc_buffer[5] != '\t') return false;

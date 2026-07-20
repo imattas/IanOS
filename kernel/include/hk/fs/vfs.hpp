@@ -48,6 +48,7 @@ enum class VirtualFileKind : uint8_t {
     ProcModules,
     ProcBootinfo,
     ProcFeatures,
+    ProcAbi,
     ProcCmdline,
     ProcHostname,
     ProcOstype,
