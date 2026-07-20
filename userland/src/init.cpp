@@ -2399,6 +2399,10 @@ void run_boot_shell_script() {
     run_command("stat", "/proc/sys/kernel/cpu_online_mask");
     run_command("stat", "/proc/sys/kernel/cpu_scheduler_mask");
     run_command("stat", "/proc/sys/kernel/cpu_parked_mask");
+    run_command("stat", "/proc/sys/tty/input_mode");
+    run_command("stat", "/proc/sys/tty/buffered_input");
+    run_command("stat", "/proc/sys/tty/columns");
+    run_command("stat", "/proc/sys/tty/rows");
     run_command("stat", "/proc/sys/kernel/boot_mode");
     run_command("stat", "/proc/sys/kernel/boot_flags");
     run_command("stat", "/proc/sys/kernel/boot_options");
@@ -2544,6 +2548,7 @@ void run_boot_shell_script() {
     run_command("/bin/ls.elf", "/proc/fs");
     run_command("/bin/ls.elf", "/proc/sys");
     run_command("/bin/ls.elf", "/proc/sys/kernel");
+    run_command("/bin/ls.elf", "/proc/sys/tty");
     run_command("/bin/ls.elf", "/proc/1");
     run_command("/bin/ls.elf", "/proc/1/task");
     run_command("/bin/ls.elf", "/proc/1/task/1");
@@ -2600,6 +2605,10 @@ void run_boot_shell_script() {
     run_command("/bin/cat.elf", "/proc/sys/kernel/cpu_online_mask");
     run_command("/bin/cat.elf", "/proc/sys/kernel/cpu_scheduler_mask");
     run_command("/bin/cat.elf", "/proc/sys/kernel/cpu_parked_mask");
+    run_command("/bin/cat.elf", "/proc/sys/tty/input_mode");
+    run_command("/bin/cat.elf", "/proc/sys/tty/buffered_input");
+    run_command("/bin/cat.elf", "/proc/sys/tty/columns");
+    run_command("/bin/cat.elf", "/proc/sys/tty/rows");
     run_command("/bin/cat.elf", "/proc/sys/kernel/boot_mode");
     run_command("/bin/cat.elf", "/proc/sys/kernel/boot_flags");
     run_command("/bin/cat.elf", "/proc/sys/kernel/boot_options");
@@ -2722,6 +2731,10 @@ void run_boot_shell_script() {
     run_command("/bin/sysctl.elf", "kernel.cpu_online_mask");
     run_command("/bin/sysctl.elf", "kernel.cpu_scheduler_mask");
     run_command("/bin/sysctl.elf", "kernel.cpu_parked_mask");
+    run_command("/bin/sysctl.elf", "tty.input_mode");
+    run_command("/bin/sysctl.elf", "tty.buffered_input");
+    run_command("/bin/sysctl.elf", "tty.columns");
+    run_command("/bin/sysctl.elf", "tty.rows");
     run_command("/bin/sysctl.elf", "kernel.boot_mode");
     run_command("/bin/sysctl.elf", "kernel.boot_flags");
     run_command("/bin/sysctl.elf", "kernel.boot_options");

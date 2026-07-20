@@ -54,6 +54,8 @@ The verifier performs the following gates:
   `/proc/sys/kernel/threads-max`, `/proc/sys/kernel/cpus`,
   `/proc/sys/kernel/online_cpus`, `/proc/sys/kernel/cpu_online_mask`,
   `/proc/sys/kernel/cpu_scheduler_mask`, `/proc/sys/kernel/cpu_parked_mask`,
+  `/proc/sys/tty/input_mode`, `/proc/sys/tty/buffered_input`,
+  `/proc/sys/tty/columns`, `/proc/sys/tty/rows`,
   `/proc/sys/kernel/boot_mode`,
   `/proc/sys/kernel/boot_flags`, `/proc/sys/kernel/boot_options`,
   `/proc/sys/kernel/machine`, `/proc/sys/kernel/modules`,

@@ -13,6 +13,10 @@ constexpr const char* kKeys[] = {
     "kernel.cpu_online_mask",
     "kernel.cpu_scheduler_mask",
     "kernel.cpu_parked_mask",
+    "tty.input_mode",
+    "tty.buffered_input",
+    "tty.columns",
+    "tty.rows",
     "kernel.boot_mode",
     "kernel.boot_flags",
     "kernel.boot_options",
@@ -34,6 +38,10 @@ constexpr const char* kPaths[] = {
     "/proc/sys/kernel/cpu_online_mask",
     "/proc/sys/kernel/cpu_scheduler_mask",
     "/proc/sys/kernel/cpu_parked_mask",
+    "/proc/sys/tty/input_mode",
+    "/proc/sys/tty/buffered_input",
+    "/proc/sys/tty/columns",
+    "/proc/sys/tty/rows",
     "/proc/sys/kernel/boot_mode",
     "/proc/sys/kernel/boot_flags",
     "/proc/sys/kernel/boot_options",
@@ -100,7 +108,7 @@ int key_index(const char* key) {
 }
 
 void print_usage() {
-    hybrid::user::write_line("[sysctl] usage sysctl [-a] [kernel.hostname|kernel.ostype|kernel.osrelease|kernel.pid_max|kernel.threads-max|kernel.cpus|kernel.online_cpus|kernel.cpu_online_mask|kernel.cpu_scheduler_mask|kernel.cpu_parked_mask|kernel.boot_mode|kernel.boot_flags|kernel.boot_options|kernel.machine|kernel.modules|kernel.features|kernel.abi_version|kernel.version]");
+    hybrid::user::write_line("[sysctl] usage sysctl [-a] [kernel.hostname|kernel.ostype|kernel.osrelease|kernel.pid_max|kernel.threads-max|kernel.cpus|kernel.online_cpus|kernel.cpu_online_mask|kernel.cpu_scheduler_mask|kernel.cpu_parked_mask|tty.input_mode|tty.buffered_input|tty.columns|tty.rows|kernel.boot_mode|kernel.boot_flags|kernel.boot_options|kernel.machine|kernel.modules|kernel.features|kernel.abi_version|kernel.version]");
 }
 
 } // namespace

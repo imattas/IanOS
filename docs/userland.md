@@ -309,14 +309,16 @@ and reports the Linux-shaped runnable/live-process load snapshot from userspace.
 `/bin/fastfetch.elf` reads the system, memory,
 framebuffer, CPU, and device inventory syscalls to print the same compact IanOS
 and Mattas identity summary that appears when the normal shell starts.
-`/bin/sysctl.elf` reads the kernel sysctl-style virtual files under
-`/proc/sys/kernel` and supports both `sysctl -a` and single-key reads such as
+`/bin/sysctl.elf` reads kernel and terminal sysctl-style virtual files under
+`/proc/sys` and supports both `sysctl -a` and single-key reads such as
 `sysctl kernel.osrelease`; process and thread capacity limits are exposed as
 `kernel.pid_max` and `kernel.threads-max` from the same constants that size the
 kernel userspace tables. `kernel.cpus` and `kernel.online_cpus` expose the
 discovered and currently online CPU topology counts. `kernel.cpu_online_mask`,
 `kernel.cpu_scheduler_mask`, and `kernel.cpu_parked_mask` expose runtime CPU
-state as hex bitmasks, and `kernel.boot_mode` mirrors the retained boot flags.
+state as hex bitmasks. `tty.input_mode`, `tty.buffered_input`, `tty.columns`,
+and `tty.rows` expose compact terminal state without parsing `/proc/tty/summary`,
+and `kernel.boot_mode` mirrors the retained boot flags.
 `kernel.boot_flags` exposes the same flag bitmask in hex for boot diagnostics,
 while `kernel.boot_options` renders the active boot flags as names.
 `kernel.machine` exposes the target machine string used by `uname`.

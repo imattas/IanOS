@@ -2682,6 +2682,22 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_hex(out, capacity, cursor, cpu_mask_for_flag(hybrid::CpuInfoParked));
         append_char(out, capacity, cursor, '\n');
         break;
+    case VirtualFileKind::ProcTtyInputMode:
+        append_text(out, capacity, cursor, terminal_input_mode_name(hk::terminal::input_mode()));
+        append_char(out, capacity, cursor, '\n');
+        break;
+    case VirtualFileKind::ProcTtyBufferedInput:
+        append_decimal(out, capacity, cursor, hk::terminal::buffered_input_count());
+        append_char(out, capacity, cursor, '\n');
+        break;
+    case VirtualFileKind::ProcTtyColumns:
+        append_decimal(out, capacity, cursor, hk::console().stats().visible_columns);
+        append_char(out, capacity, cursor, '\n');
+        break;
+    case VirtualFileKind::ProcTtyRows:
+        append_decimal(out, capacity, cursor, hk::console().stats().visible_rows);
+        append_char(out, capacity, cursor, '\n');
+        break;
     case VirtualFileKind::ProcBootMode:
         append_text(out, capacity, cursor, boot_mode_name());
         append_char(out, capacity, cursor, '\n');
@@ -3072,6 +3088,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_directory("/proc/fs");
     register_directory("/proc/sys");
     register_directory("/proc/sys/kernel");
+    register_directory("/proc/sys/tty");
     register_directory("/dev");
     register_directory("/tmp", true);
     register_directory("/disk");
@@ -3132,6 +3149,10 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/sys/kernel/cpu_online_mask", VirtualFileKind::ProcCpuOnlineMask);
     register_virtual_file("/proc/sys/kernel/cpu_scheduler_mask", VirtualFileKind::ProcCpuSchedulerMask);
     register_virtual_file("/proc/sys/kernel/cpu_parked_mask", VirtualFileKind::ProcCpuParkedMask);
+    register_virtual_file("/proc/sys/tty/input_mode", VirtualFileKind::ProcTtyInputMode);
+    register_virtual_file("/proc/sys/tty/buffered_input", VirtualFileKind::ProcTtyBufferedInput);
+    register_virtual_file("/proc/sys/tty/columns", VirtualFileKind::ProcTtyColumns);
+    register_virtual_file("/proc/sys/tty/rows", VirtualFileKind::ProcTtyRows);
     register_virtual_file("/proc/sys/kernel/boot_mode", VirtualFileKind::ProcBootMode);
     register_virtual_file("/proc/sys/kernel/boot_flags", VirtualFileKind::ProcBootFlags);
     register_virtual_file("/proc/sys/kernel/boot_options", VirtualFileKind::ProcBootOptions);
@@ -4049,6 +4070,7 @@ bool self_test() {
     const Node* proc_cmdline = vfs().find("/proc/cmdline");
     const Node* proc_sys = vfs().find("/proc/sys");
     const Node* proc_sys_kernel = vfs().find("/proc/sys/kernel");
+    const Node* proc_sys_tty = vfs().find("/proc/sys/tty");
     const Node* proc_hostname = vfs().find("/proc/sys/kernel/hostname");
     const Node* proc_ostype = vfs().find("/proc/sys/kernel/ostype");
     const Node* proc_osrelease = vfs().find("/proc/sys/kernel/osrelease");
@@ -4059,6 +4081,10 @@ bool self_test() {
     const Node* proc_cpu_online_mask = vfs().find("/proc/sys/kernel/cpu_online_mask");
     const Node* proc_cpu_scheduler_mask = vfs().find("/proc/sys/kernel/cpu_scheduler_mask");
     const Node* proc_cpu_parked_mask = vfs().find("/proc/sys/kernel/cpu_parked_mask");
+    const Node* proc_tty_input_mode = vfs().find("/proc/sys/tty/input_mode");
+    const Node* proc_tty_buffered_input = vfs().find("/proc/sys/tty/buffered_input");
+    const Node* proc_tty_columns = vfs().find("/proc/sys/tty/columns");
+    const Node* proc_tty_rows = vfs().find("/proc/sys/tty/rows");
     const Node* proc_boot_mode = vfs().find("/proc/sys/kernel/boot_mode");
     const Node* proc_boot_flags = vfs().find("/proc/sys/kernel/boot_flags");
     const Node* proc_boot_options = vfs().find("/proc/sys/kernel/boot_options");
@@ -4092,7 +4118,8 @@ bool self_test() {
         !proc_self || proc_self->type != NodeType::Directory) return false;
     if (!proc_fs || proc_fs->type != NodeType::Directory ||
         !proc_sys || proc_sys->type != NodeType::Directory ||
-        !proc_sys_kernel || proc_sys_kernel->type != NodeType::Directory) return false;
+        !proc_sys_kernel || proc_sys_kernel->type != NodeType::Directory ||
+        !proc_sys_tty || proc_sys_tty->type != NodeType::Directory) return false;
     if (!proc_meminfo || proc_meminfo->type != NodeType::VirtualFile || proc_meminfo->virtual_kind != VirtualFileKind::ProcMeminfo ||
         !proc_iomem || proc_iomem->type != NodeType::VirtualFile || proc_iomem->virtual_kind != VirtualFileKind::ProcIomem ||
         !proc_rtc || proc_rtc->type != NodeType::VirtualFile || proc_rtc->virtual_kind != VirtualFileKind::ProcRtc ||
@@ -4142,6 +4169,10 @@ bool self_test() {
         !proc_cpu_online_mask || proc_cpu_online_mask->type != NodeType::VirtualFile || proc_cpu_online_mask->virtual_kind != VirtualFileKind::ProcCpuOnlineMask ||
         !proc_cpu_scheduler_mask || proc_cpu_scheduler_mask->type != NodeType::VirtualFile || proc_cpu_scheduler_mask->virtual_kind != VirtualFileKind::ProcCpuSchedulerMask ||
         !proc_cpu_parked_mask || proc_cpu_parked_mask->type != NodeType::VirtualFile || proc_cpu_parked_mask->virtual_kind != VirtualFileKind::ProcCpuParkedMask ||
+        !proc_tty_input_mode || proc_tty_input_mode->type != NodeType::VirtualFile || proc_tty_input_mode->virtual_kind != VirtualFileKind::ProcTtyInputMode ||
+        !proc_tty_buffered_input || proc_tty_buffered_input->type != NodeType::VirtualFile || proc_tty_buffered_input->virtual_kind != VirtualFileKind::ProcTtyBufferedInput ||
+        !proc_tty_columns || proc_tty_columns->type != NodeType::VirtualFile || proc_tty_columns->virtual_kind != VirtualFileKind::ProcTtyColumns ||
+        !proc_tty_rows || proc_tty_rows->type != NodeType::VirtualFile || proc_tty_rows->virtual_kind != VirtualFileKind::ProcTtyRows ||
         !proc_boot_mode || proc_boot_mode->type != NodeType::VirtualFile || proc_boot_mode->virtual_kind != VirtualFileKind::ProcBootMode ||
         !proc_boot_flags || proc_boot_flags->type != NodeType::VirtualFile || proc_boot_flags->virtual_kind != VirtualFileKind::ProcBootFlags ||
         !proc_boot_options || proc_boot_options->type != NodeType::VirtualFile || proc_boot_options->virtual_kind != VirtualFileKind::ProcBootOptions ||
@@ -4250,6 +4281,15 @@ bool self_test() {
         proc_buffer[0] != '0' || proc_buffer[1] != 'x') return false;
     if (vfs().read("/proc/sys/kernel/cpu_parked_mask", 0, proc_buffer, 18) != 18 ||
         proc_buffer[0] != '0' || proc_buffer[1] != 'x') return false;
+    if (vfs().read("/proc/sys/tty/input_mode", 0, proc_buffer, 4) < 4 ||
+        !((proc_buffer[0] == 'r' && proc_buffer[1] == 'a' && proc_buffer[2] == 'w') ||
+          (proc_buffer[0] == 'c' && proc_buffer[1] == 'a' && proc_buffer[2] == 'n'))) return false;
+    if (vfs().read("/proc/sys/tty/buffered_input", 0, proc_buffer, 2) == 0 ||
+        proc_buffer[0] < '0' || proc_buffer[0] > '9') return false;
+    if (vfs().read("/proc/sys/tty/columns", 0, proc_buffer, 2) == 0 ||
+        proc_buffer[0] < '1' || proc_buffer[0] > '9') return false;
+    if (vfs().read("/proc/sys/tty/rows", 0, proc_buffer, 2) == 0 ||
+        proc_buffer[0] < '1' || proc_buffer[0] > '9') return false;
     if (vfs().read("/proc/sys/kernel/boot_mode", 0, proc_buffer, 5) != 5 ||
         proc_buffer[0] != 'u' || proc_buffer[1] != 'e' || proc_buffer[2] != 'f' || proc_buffer[3] != 'i' ||
         (proc_buffer[4] != '\n' && proc_buffer[4] != '-')) return false;
