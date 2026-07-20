@@ -674,6 +674,16 @@ bool thread_belongs_to_pid(uint64_t pid, uint64_t tid, hybrid::UserThreadInfo* o
     return true;
 }
 
+uint64_t thread_count_for_pid(uint64_t pid) {
+    auto& manager = hk::userspace::userspace_manager();
+    uint64_t total = 0;
+    for (uint64_t i = 0; i < manager.user_thread_count(); ++i) {
+        hybrid::UserThreadInfo thread{};
+        if (manager.copy_thread_info(i, thread) && thread.pid == pid) ++total;
+    }
+    return total;
+}
+
 enum class DynamicProcKind : uint8_t {
     None,
     PidDirectory,
@@ -884,7 +894,9 @@ void render_proc_status(uint64_t pid, char* out, uint64_t capacity) {
     append_text(out, capacity, cursor, proc_process_state_name(process.state));
     append_text(out, capacity, cursor, "\nFDs:\t");
     append_decimal(out, capacity, cursor, process.open_file_count);
-    append_text(out, capacity, cursor, "\nThreads:\t1\nVmPages:\t");
+    append_text(out, capacity, cursor, "\nThreads:\t");
+    append_decimal(out, capacity, cursor, thread_count_for_pid(pid));
+    append_text(out, capacity, cursor, "\nVmPages:\t");
     append_decimal(out, capacity, cursor, process.owned_page_count);
     append_text(out, capacity, cursor, "\nStackPages:\t");
     append_decimal(out, capacity, cursor, process.user_stack_pages);
@@ -1579,7 +1591,7 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_text(out, capacity, cursor, "\nFDs:\t");
         append_decimal(out, capacity, cursor, found ? selected.open_file_count : 0);
         append_text(out, capacity, cursor, "\nThreads:\t");
-        append_decimal(out, capacity, cursor, manager.user_thread_count());
+        append_decimal(out, capacity, cursor, found ? thread_count_for_pid(pid) : 0);
         append_text(out, capacity, cursor, "\nVmPages:\t");
         append_decimal(out, capacity, cursor, found ? selected.owned_page_count : 0);
         append_text(out, capacity, cursor, "\nRunTicks:\t");

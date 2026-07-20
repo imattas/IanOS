@@ -269,7 +269,9 @@ count, proving the procfs path is usable outside kernel metadata syscalls.
 `/proc/self/limits` or `/proc/<pid>/limits` through the same descriptor path;
 `/bin/proctask.elf` lists `/proc/self/task` or `/proc/<pid>/task` and streams
 `/proc/<pid>/task/<tid>/status`, proving scheduler-owned process and thread
-metadata is visible as Linux-like procfs files.
+metadata is visible as Linux-like procfs files. `/proc/self/status` and
+`/proc/<pid>/status` report their `Threads` value from the same per-PID task
+table used by those directories.
 `/bin/version.elf` cross-checks `GetSystemInfo` against
 `/proc/sys/kernel/osrelease` and `/proc/sys/kernel/version` so release metadata
 is visible through one command and validated across both ABI paths.
