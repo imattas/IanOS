@@ -725,6 +725,8 @@ Result dispatch(uint64_t number, uint64_t arg0, uint64_t arg1, uint64_t arg2, ui
         out->max_ram_links = hk::fs::kMaxRamLinks;
         out->max_mounts = hk::fs::kMaxMounts;
         out->max_ram_file_bytes = hk::fs::kMaxRamFileBytes;
+        out->max_user_processes = hk::userspace::kMaxUserProcesses;
+        out->max_user_threads = hk::userspace::kMaxUserThreads;
         out->max_process_file_descriptors = hk::userspace::kMaxProcessFileDescriptors;
         out->max_owned_user_pages = hk::userspace::kMaxOwnedUserPages;
         out->max_process_arguments = hk::userspace::kMaxProcessArguments;
@@ -1392,6 +1394,8 @@ bool self_test() {
     if (limits_result.error != kErrorNone || limits_result.value != 1 ||
         limits_info.max_boot_modules < system_info.boot_module_count ||
         limits_info.max_vfs_nodes < hk::fs::vfs().node_count() ||
+        limits_info.max_user_processes < hk::userspace::userspace_manager().process_count() ||
+        limits_info.max_user_threads < hk::userspace::userspace_manager().user_thread_count() ||
         limits_info.max_process_file_descriptors < 3 ||
         limits_info.max_pipes == 0 || limits_info.pipe_capacity == 0 ||
         limits_info.max_cpus < system_info.boot_info_version ||

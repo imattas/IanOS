@@ -32,6 +32,10 @@ extern "C" [[noreturn]] void _start() {
     write_value("mounts ", limits.max_mounts);
     if (mounts.error == hybrid::kSyscallErrorNone) write_value("mounts_used ", mounts.value);
     write_value("ram_file_bytes ", limits.max_ram_file_bytes);
+    write_value("process_slots ", limits.max_user_processes);
+    if (processes.error == hybrid::kSyscallErrorNone) write_value("processes_created ", processes.value);
+    write_value("user_thread_slots ", limits.max_user_threads);
+    if (threads.error == hybrid::kSyscallErrorNone) write_value("user_threads ", threads.value);
     write_value("process_fds ", limits.max_process_file_descriptors);
     write_value("owned_user_pages ", limits.max_owned_user_pages);
     write_value("argv_entries ", limits.max_process_arguments);
@@ -45,8 +49,7 @@ extern "C" [[noreturn]] void _start() {
     write_value("cpus ", limits.max_cpus);
     write_value("pmm_bitmap_pages ", limits.pmm_bitmap_pages);
     write_value("fat_paths ", limits.mounted_fat_path_capacity);
-    if (processes.error == hybrid::kSyscallErrorNone) write_value("processes_created ", processes.value);
-    if (threads.error == hybrid::kSyscallErrorNone) write_value("user_threads ", threads.value);
 
-    hybrid::user::exit(limits.max_vfs_nodes != 0 && limits.max_process_file_descriptors >= 3 ? 0 : 2);
+    hybrid::user::exit(limits.max_vfs_nodes != 0 && limits.max_user_processes != 0 &&
+        limits.max_user_threads != 0 && limits.max_process_file_descriptors >= 3 ? 0 : 2);
 }

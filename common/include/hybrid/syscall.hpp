@@ -473,6 +473,8 @@ struct [[gnu::packed]] LimitsInfo {
     uint64_t max_ram_links;
     uint64_t max_mounts;
     uint64_t max_ram_file_bytes;
+    uint64_t max_user_processes;
+    uint64_t max_user_threads;
     uint64_t max_process_file_descriptors;
     uint64_t max_owned_user_pages;
     uint64_t max_process_arguments;
