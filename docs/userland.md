@@ -241,8 +241,8 @@ failure counters, peak use, and last allocation size.
 `/bin/procvmstat.elf` streams `/proc/vmstat` through ordinary VFS open/read
 syscalls and reports Linux-like PMM/VMM activity counters.
 `/bin/procstat.elf` streams `/proc/stat` through ordinary VFS open/read syscalls
-and reports Linux-like scheduler, interrupt, context-switch, process, and
-boot-time counters.
+and reports Linux-like CPU ticks, interrupt totals, selected vector counters,
+context-switch, process, and boot-time counters.
 `/bin/netstat.elf` reads `/proc/net/summary` and `/proc/net/dev` through the VFS
 syscalls and reports e1000 link state, ring readiness, RX/TX counters, and
 interface rows from userspace.
@@ -446,7 +446,7 @@ free-run availability by page order from the current bitmap allocator.
 `/proc/loadavg` exposes an
 instantaneous runnable/live process load snapshot. `/proc/sched_debug` exposes
 kernel scheduler totals and userspace blocking/preemption diagnostics.
-`/proc/stat` exposes scheduler and
+`/proc/stat` exposes scheduler, interrupt, and
 process counters in a Linux-like text layout, `/proc/block/bootdisk` exposes
 boot-disk cache counters, `/proc/driver/summary` exposes driver-manager
 lifecycle counters, `/proc/driver/devices` exposes bound driver-device rows,
