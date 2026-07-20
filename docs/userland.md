@@ -248,6 +248,10 @@ syscalls and reports e1000 link state, ring readiness, RX/TX counters, and
 interface rows from userspace.
 `/bin/lsmod.elf` reads `/proc/modules` through the VFS syscalls and reports the
 bootloader-supplied kernel and userland module table from userspace.
+`/bin/pmap.elf` uses process metadata syscalls to report a process entry point,
+address-space root, image mapping, user stack mapping, owned page count, and
+open descriptor count. Without arguments it reports the current process; with a
+PID argument it reports that process.
 `/bin/kmsg.elf` reads `/proc/kmsg` through ordinary VFS open/read syscalls and
 streams the retained kernel ring buffer with byte and line counters, while
 `/bin/dmesg.elf` continues to exercise the direct kernel-log syscall.

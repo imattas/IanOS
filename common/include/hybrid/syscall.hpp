@@ -211,6 +211,7 @@ struct [[gnu::packed]] ProcessInfo {
     uint64_t entry;
     uint64_t address_space_root;
     uint64_t user_stack_top;
+    uint64_t user_stack_pages;
     uint64_t image_base;
     uint64_t image_pages;
     uint64_t main_thread_id;

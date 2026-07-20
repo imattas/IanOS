@@ -45,7 +45,7 @@ constexpr char kProcKernelOstype[] =
 constexpr char kProcKernelOsrelease[] =
     HYBRID_OS_RELEASE "\n";
 
-constexpr uint32_t kMaxMountedFatNodes = 160;
+constexpr uint32_t kMaxMountedFatNodes = 256;
 constexpr uint64_t kVirtualFileScratchBytes = 8192;
 char mounted_fat_paths[kMaxMountedFatNodes][64]{};
 uint32_t mounted_fat_path_count = 0;
@@ -629,6 +629,8 @@ void render_proc_status(uint64_t pid, char* out, uint64_t capacity) {
     append_decimal(out, capacity, cursor, process.open_file_count);
     append_text(out, capacity, cursor, "\nThreads:\t1\nVmPages:\t");
     append_decimal(out, capacity, cursor, process.owned_page_count);
+    append_text(out, capacity, cursor, "\nStackPages:\t");
+    append_decimal(out, capacity, cursor, process.user_stack_pages);
     append_text(out, capacity, cursor, "\nSyscalls:\t");
     append_decimal(out, capacity, cursor, process.syscall_count);
     append_text(out, capacity, cursor, "\nLastSyscall:\t");
@@ -3212,6 +3214,8 @@ bool self_test() {
     if (!du_cmd || du_cmd->type != NodeType::MemoryFile || du_cmd->size < 4) return false;
     const Node* pipeinfo_cmd = vfs().find("/bin/pipeinfo.elf");
     if (!pipeinfo_cmd || pipeinfo_cmd->type != NodeType::MemoryFile || pipeinfo_cmd->size < 4) return false;
+    const Node* pmap_cmd = vfs().find("/bin/pmap.elf");
+    if (!pmap_cmd || pmap_cmd->type != NodeType::MemoryFile || pmap_cmd->size < 4) return false;
     const Node* kill_cmd = vfs().find("/bin/kill.elf");
     if (!kill_cmd || kill_cmd->type != NodeType::MemoryFile || kill_cmd->size < 4) return false;
     const Node* killall_cmd = vfs().find("/bin/killall.elf");

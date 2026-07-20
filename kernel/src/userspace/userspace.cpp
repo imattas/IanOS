@@ -1799,6 +1799,7 @@ bool UserspaceManager::copy_process_info(uint64_t index, hybrid::ProcessInfo& ou
     out.entry = process.entry;
     out.address_space_root = process.address_space_root;
     out.user_stack_top = process.user_stack_top;
+    out.user_stack_pages = process.user_stack_pages;
     out.image_base = process.image_base;
     out.image_pages = process.image_pages;
     out.main_thread_id = process.main_thread_id;
