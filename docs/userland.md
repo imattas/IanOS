@@ -301,6 +301,9 @@ directly.
 `/bin/kmsg.elf` reads `/proc/kmsg` through ordinary VFS open/read syscalls and
 streams the retained kernel ring buffer with byte and line counters, while
 `/bin/dmesg.elf` continues to exercise the direct kernel-log syscall.
+`/bin/uptime.elf` reports raw scheduler ticks through the syscall ABI and also
+opens `/proc/uptime` to prove the VFS-backed uptime summary is readable from
+ordinary userspace.
 `/bin/loadavg.elf` reads `/proc/loadavg` through ordinary VFS open/read syscalls
 and reports the Linux-shaped runnable/live-process load snapshot from userspace.
 `/bin/fastfetch.elf` reads the system, memory,
@@ -515,9 +518,11 @@ machine type, CPU topology counts and masks, boot-module count, feature flags, A
 version, and scheduler capacity in the same sysctl-style tree.
 `/proc/heapinfo` exposes kernel heap block and allocation diagnostics. `/proc/vmstat` exposes Linux-like PMM and VMM counters. `/proc/buddyinfo` exposes PMM
 free-run availability by page order from the current bitmap allocator.
-`/proc/loadavg` exposes an
-instantaneous runnable/live process load snapshot. `/proc/sched_debug` exposes
-kernel scheduler totals and userspace blocking/preemption diagnostics.
+`/proc/uptime` exposes raw ticks, PIT frequency, whole seconds, LAPIC tick
+state, scheduler switch/yield/preemption counters, and live userspace load.
+`/proc/loadavg` exposes an instantaneous runnable/live process load snapshot.
+`/proc/sched_debug` exposes kernel scheduler totals and userspace
+blocking/preemption diagnostics.
 `/proc/stat` exposes scheduler, interrupt, and
 process counters in a Linux-like text layout, `/proc/block/bootdisk` exposes
 boot-disk cache counters, `/proc/driver/summary` exposes driver-manager

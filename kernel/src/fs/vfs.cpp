@@ -1496,11 +1496,34 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_text(out, capacity, cursor, "\nsource cmos\n");
         break;
     }
-    case VirtualFileKind::ProcUptime:
+    case VirtualFileKind::ProcUptime: {
+        const uint64_t ticks = hk::timer::ticks();
+        const uint32_t frequency = hk::timer::frequency();
+        auto& scheduler = hk::sched::scheduler();
+        auto& manager = hk::userspace::userspace_manager();
         append_text(out, capacity, cursor, "ticks ");
-        append_decimal(out, capacity, cursor, hk::timer::ticks());
+        append_decimal(out, capacity, cursor, ticks);
+        append_text(out, capacity, cursor, "\nfrequency_hz ");
+        append_decimal(out, capacity, cursor, frequency);
+        append_text(out, capacity, cursor, "\nseconds ");
+        append_decimal(out, capacity, cursor, frequency == 0 ? 0 : ticks / frequency);
+        append_text(out, capacity, cursor, "\nlapic_ticks ");
+        append_decimal(out, capacity, cursor, hk::timer::lapic_ticks());
+        append_text(out, capacity, cursor, "\nlapic_timer_active ");
+        append_decimal(out, capacity, cursor, hk::timer::lapic_timer_active() ? 1 : 0);
+        append_text(out, capacity, cursor, "\nscheduler_switches ");
+        append_decimal(out, capacity, cursor, scheduler.switch_count());
+        append_text(out, capacity, cursor, "\nscheduler_yields ");
+        append_decimal(out, capacity, cursor, scheduler.yield_count());
+        append_text(out, capacity, cursor, "\nscheduler_preempts ");
+        append_decimal(out, capacity, cursor, scheduler.preempt_count());
+        append_text(out, capacity, cursor, "\nrunnable_user_threads ");
+        append_decimal(out, capacity, cursor, manager.runnable_thread_count());
+        append_text(out, capacity, cursor, "\nlive_processes ");
+        append_decimal(out, capacity, cursor, manager.live_process_count());
         append_char(out, capacity, cursor, '\n');
         break;
+    }
     case VirtualFileKind::ProcLoadavg: {
         auto& manager = hk::userspace::userspace_manager();
         uint64_t runnable = manager.runnable_thread_count();
