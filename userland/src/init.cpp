@@ -2394,9 +2394,11 @@ void run_boot_shell_script() {
     run_command("stat", "/proc/sys/kernel/osrelease");
     run_command("stat", "/proc/sys/kernel/version");
     run_command("stat", "/proc/self/status");
+    run_command("stat", "/proc/self/stat");
     run_command("stat", "/proc/self/fd");
     run_command("stat", "/proc/1");
     run_command("stat", "/proc/1/status");
+    run_command("stat", "/proc/1/stat");
     run_command("stat", "/proc/1/fd");
     run_command("stat", "/disk/bootsector.bin");
     run_command("stat", "/mnt/boot/kernel.elf");
@@ -2551,8 +2553,10 @@ void run_boot_shell_script() {
     run_command("/bin/cat.elf", "/proc/sys/kernel/osrelease");
     run_command("/bin/cat.elf", "/proc/sys/kernel/version");
     run_command("/bin/cat.elf", "/proc/self/status");
+    run_command("/bin/cat.elf", "/proc/self/stat");
     run_command("/bin/cat.elf", "/proc/self/fd");
     run_command("/bin/cat.elf", "/proc/1/status");
+    run_command("/bin/cat.elf", "/proc/1/stat");
     run_command("/bin/cat.elf", "/proc/1/fd");
     char readlink_fd_line[80];
     copy_text(readlink_fd_line, sizeof(readlink_fd_line), "readlink /proc/self/fd/1 > /tmp/readlink.txt");
