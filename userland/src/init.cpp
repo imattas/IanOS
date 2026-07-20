@@ -2396,6 +2396,7 @@ void run_boot_shell_script() {
     run_command("stat", "/proc/sys/kernel/threads-max");
     run_command("stat", "/proc/sys/kernel/boot_mode");
     run_command("stat", "/proc/sys/kernel/boot_flags");
+    run_command("stat", "/proc/sys/kernel/boot_options");
     run_command("stat", "/proc/sys/kernel/version");
     run_command("stat", "/proc/self/status");
     run_command("stat", "/proc/self/stat");
@@ -2587,6 +2588,7 @@ void run_boot_shell_script() {
     run_command("/bin/cat.elf", "/proc/sys/kernel/threads-max");
     run_command("/bin/cat.elf", "/proc/sys/kernel/boot_mode");
     run_command("/bin/cat.elf", "/proc/sys/kernel/boot_flags");
+    run_command("/bin/cat.elf", "/proc/sys/kernel/boot_options");
     run_command("/bin/cat.elf", "/proc/sys/kernel/version");
     run_command("/bin/cat.elf", "/proc/self/status");
     run_command("/bin/cat.elf", "/proc/self/stat");
@@ -2699,6 +2701,7 @@ void run_boot_shell_script() {
     run_command("/bin/sysctl.elf", "kernel.threads-max");
     run_command("/bin/sysctl.elf", "kernel.boot_mode");
     run_command("/bin/sysctl.elf", "kernel.boot_flags");
+    run_command("/bin/sysctl.elf", "kernel.boot_options");
     run_command("/bin/id.elf");
     run_command("/bin/ids.elf");
     run_command("/bin/groups.elf");
