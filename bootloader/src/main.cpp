@@ -169,6 +169,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\loop.elf", "/bin/loop.elf"},
     {L"\\bin\\devio.elf", "/bin/devio.elf"},
     {L"\\bin\\tty.elf", "/bin/tty.elf"},
+    {L"\\bin\\ttystat.elf", "/bin/ttystat.elf"},
     {L"\\bin\\stty.elf", "/bin/stty.elf"},
     {L"\\bin\\ttyread.elf", "/bin/ttyread.elf"},
     {L"\\bin\\clear.elf", "/bin/clear.elf"},
