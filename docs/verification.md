@@ -51,7 +51,7 @@ The verifier performs the following gates:
   `/proc/mounts`, `/proc/filesystems`, `/proc/fs/vfs`, `/proc/cmdline`,
   `/proc/stat`, `/proc/sys/kernel/hostname`, `/proc/sys/kernel/ostype`,
   `/proc/sys/kernel/osrelease`, `/proc/sys/kernel/version`,
-  `/proc/self/status`, `/proc/self/stat`, `/proc/self/maps`, `/proc/self/cmdline`, `/proc/self/fd`, `/proc/1/status`, `/proc/1/stat`, `/proc/1/maps`, `/proc/1/cmdline`, and `/proc/1/fd` virtual-file metadata
+  `/proc/self/status`, `/proc/self/stat`, `/proc/self/maps`, `/proc/self/cmdline`, `/proc/self/environ`, `/proc/self/fd`, `/proc/1/status`, `/proc/1/stat`, `/proc/1/maps`, `/proc/1/cmdline`, `/proc/1/environ`, and `/proc/1/fd` virtual-file metadata
   and reads, default `/dev/tty` fd 0/1/2 process descriptors,
   `/proc/self/fd/1` readlink and realpath resolution under stdout redirection,
   `/dev/null`, `/dev/zero`, `/dev/tty`, and `/dev/console` character-device
