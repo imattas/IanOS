@@ -53,7 +53,8 @@ The verifier performs the following gates:
   `/proc/sys/kernel/osrelease`, `/proc/sys/kernel/pid_max`,
   `/proc/sys/kernel/threads-max`, `/proc/sys/kernel/boot_mode`,
   `/proc/sys/kernel/boot_flags`, `/proc/sys/kernel/boot_options`,
-  `/proc/sys/kernel/abi_version`, `/proc/sys/kernel/version`,
+  `/proc/sys/kernel/machine`, `/proc/sys/kernel/abi_version`,
+  `/proc/sys/kernel/version`,
   `/proc/self/status`, `/proc/self/stat`, `/proc/self/maps`, `/proc/self/cmdline`, `/proc/self/environ`, `/proc/self/cwd`, `/proc/self/exe`, `/proc/self/root`, `/proc/self/fd`, `/proc/self/fdinfo`, `/proc/self/limits`, `/proc/1/status`, `/proc/1/stat`, `/proc/1/maps`, `/proc/1/cmdline`, `/proc/1/environ`, `/proc/1/cwd`, `/proc/1/exe`, `/proc/1/root`, `/proc/1/fd`, `/proc/1/fdinfo`, and `/proc/1/limits` virtual-file metadata
   and reads, default `/dev/tty` fd 0/1/2 process descriptors,
   `/proc/self/fd/1` readlink and realpath resolution under stdout redirection,
