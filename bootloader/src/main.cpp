@@ -67,6 +67,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\err.elf", "/bin/err.elf"},
     {L"\\bin\\stat.elf", "/bin/stat.elf"},
     {L"\\bin\\statfs.elf", "/bin/statfs.elf"},
+    {L"\\bin\\filesystems.elf", "/bin/filesystems.elf"},
     {L"\\bin\\file.elf", "/bin/file.elf"},
     {L"\\bin\\lsattr.elf", "/bin/lsattr.elf"},
     {L"\\bin\\namei.elf", "/bin/namei.elf"},
