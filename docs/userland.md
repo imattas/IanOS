@@ -47,7 +47,7 @@ kernel and user binaries share the same contract. The current user program uses
 - live pipe-table snapshots through `GetPipeCount` and `GetPipeInfo(index, out)`
 - kernel-backed `/dev/null`, `/dev/zero`, `/dev/tty`, and `/dev/console` character-device reads/writes through normal file descriptors
 - default fd 0, fd 1, and fd 2 descriptors backed by `/dev/tty` for newly created processes, with normal redirection and inheritance able to replace them
-- generated `/proc/meminfo`, `/proc/iomem`, `/proc/buddyinfo`, `/proc/heapinfo`, `/proc/vmstat`, `/proc/uptime`, `/proc/loadavg`, `/proc/sched_debug`, `/proc/stat`, `/proc/block/bootdisk`, `/proc/driver/summary`, `/proc/driver/devices`, `/proc/pci/summary`, `/proc/pci/devices`, `/proc/irq/summary`, `/proc/interrupts`, `/proc/tty/summary`, `/proc/cpu/summary`, `/proc/cpu/topology`, `/proc/processes`, `/proc/mounts`, `/proc/filesystems`, `/proc/fs/vfs`, `/proc/cmdline`, `/proc/self/status`, `/proc/self/stat`, `/proc/self/fd`, `/proc/<pid>/status`, `/proc/<pid>/stat`, and `/proc/<pid>/fd` virtual-file reads through normal file descriptors
+- generated `/proc/meminfo`, `/proc/iomem`, `/proc/buddyinfo`, `/proc/heapinfo`, `/proc/vmstat`, `/proc/uptime`, `/proc/loadavg`, `/proc/sched_debug`, `/proc/stat`, `/proc/block/bootdisk`, `/proc/driver/summary`, `/proc/driver/devices`, `/proc/pci/summary`, `/proc/pci/devices`, `/proc/irq/summary`, `/proc/interrupts`, `/proc/tty/summary`, `/proc/cpu/summary`, `/proc/cpu/topology`, `/proc/processes`, `/proc/mounts`, `/proc/filesystems`, `/proc/fs/vfs`, `/proc/cmdline`, `/proc/self/status`, `/proc/self/stat`, `/proc/self/maps`, `/proc/self/fd`, `/proc/<pid>/status`, `/proc/<pid>/stat`, `/proc/<pid>/maps`, and `/proc/<pid>/fd` virtual-file reads through normal file descriptors
 - `/proc/self/fd/N` and `/proc/<pid>/fd/N` link resolution through `ReadLink(path, out, capacity)`
 - RAM VFS create/write/delete file operations
 - RAM VFS create/delete directory operations with parent-directory validation and non-empty directory refusal
@@ -171,11 +171,11 @@ The boot proof also stats, lists, and reads generated `/proc/meminfo`,
 `/proc/iomem`, `/proc/buddyinfo`, `/proc/heapinfo`, `/proc/vmstat`, `/proc/uptime`, `/proc/loadavg`, `/proc/sched_debug`, `/proc/block/bootdisk`, `/proc/driver/summary`, `/proc/driver/devices`, `/proc/pci/summary`, `/proc/pci/devices`, `/proc/irq/summary`, `/proc/interrupts`, `/proc/tty/summary`, `/proc/cpu/summary`, `/proc/cpu/topology`, `/proc/processes`, `/proc/mounts`, `/proc/filesystems`,
 `/proc/fs/vfs`, `/proc/cmdline`, `/proc/stat`, `/proc/sys/kernel/hostname`, `/proc/sys/kernel/ostype`,
 `/proc/sys/kernel/osrelease`, `/proc/sys/kernel/version`, `/proc/self/status`,
-`/proc/self/stat`, `/proc/self/fd`, `/proc/1/status`, `/proc/1/stat`, and `/proc/1/fd` through the same VFS and
+`/proc/self/stat`, `/proc/self/maps`, `/proc/self/fd`, `/proc/1/status`, `/proc/1/stat`, `/proc/1/maps`, and `/proc/1/fd` through the same VFS and
 file-descriptor syscalls used by normal
 commands. The fd-table proof shows fd 0, fd 1, and fd 2 resolving to `/dev/tty`
 unless a command has redirected them. `ls /proc` now includes numeric process directories and `ls /proc/1`
-exposes generated `status`, `stat`, and `fd` entries for the init shell process.
+exposes generated `status`, `stat`, `maps`, and `fd` entries for the init shell process.
 `/bin/readlink.elf` redirects stdout to `/tmp/readlink.txt`, resolves
 `/proc/self/fd/1`, resolves the same descriptor through its numeric
 `/proc/<pid>/fd/1` path, enumerates its numeric `/proc/<pid>/fd` directory, and

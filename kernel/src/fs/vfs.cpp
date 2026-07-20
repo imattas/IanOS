@@ -609,7 +609,7 @@ bool process_info_by_pid(uint64_t pid, hybrid::ProcessInfo& out) {
     return false;
 }
 
-enum class DynamicProcKind : uint8_t { None, PidDirectory, PidStatus, PidStat, PidFd, PidFdEntry };
+enum class DynamicProcKind : uint8_t { None, PidDirectory, PidStatus, PidStat, PidMaps, PidFd, PidFdEntry };
 
 char proc_process_state_char(uint32_t state) {
     switch (state) {
@@ -664,6 +664,7 @@ DynamicProcKind parse_dynamic_proc_path(const char* normalized, uint64_t& pid, u
     if (normalized[cursor++] != '/') return DynamicProcKind::None;
     if (text_equal(normalized + cursor, "status")) return DynamicProcKind::PidStatus;
     if (text_equal(normalized + cursor, "stat")) return DynamicProcKind::PidStat;
+    if (text_equal(normalized + cursor, "maps")) return DynamicProcKind::PidMaps;
     if (text_equal(normalized + cursor, "fd")) return DynamicProcKind::PidFd;
     if (normalized[cursor] == 'f' && normalized[cursor + 1] == 'd' && normalized[cursor + 2] == '/') {
         cursor += 3;
@@ -765,6 +766,39 @@ void render_proc_stat(uint64_t pid, char* out, uint64_t capacity) {
     append_char(out, capacity, cursor, '\n');
 }
 
+void append_proc_map_line(char* out, uint64_t capacity, uint64_t& cursor, uint64_t start, uint64_t bytes,
+                          const char* permissions, const char* name) {
+    if (bytes == 0) return;
+    append_hex(out, capacity, cursor, start);
+    append_char(out, capacity, cursor, '-');
+    append_hex(out, capacity, cursor, start + bytes);
+    append_char(out, capacity, cursor, ' ');
+    append_text(out, capacity, cursor, permissions);
+    append_text(out, capacity, cursor, " 00000000 00:00 0 ");
+    append_text(out, capacity, cursor, name);
+    append_char(out, capacity, cursor, '\n');
+}
+
+void render_proc_maps(uint64_t pid, char* out, uint64_t capacity) {
+    uint64_t cursor = 0;
+    out[0] = 0;
+    hybrid::ProcessInfo process{};
+    if (!process_info_by_pid(pid, process)) return;
+
+    append_proc_map_line(out, capacity, cursor, process.image_base, process.image_pages * hk::mm::kPageSize,
+                         "r-xp", process.name);
+    const uint64_t stack_bytes = process.user_stack_pages * hk::mm::kPageSize;
+    const uint64_t stack_start = process.user_stack_top > stack_bytes ? process.user_stack_top - stack_bytes : 0;
+    append_proc_map_line(out, capacity, cursor, stack_start, stack_bytes, "rw-p", "[stack]");
+    if (process.address_space_root != 0) {
+        append_text(out, capacity, cursor, "# pml4 ");
+        append_hex(out, capacity, cursor, process.address_space_root);
+        append_text(out, capacity, cursor, "\n# owned_pages ");
+        append_decimal(out, capacity, cursor, process.owned_page_count);
+        append_char(out, capacity, cursor, '\n');
+    }
+}
+
 void render_proc_fd(uint64_t pid, char* out, uint64_t capacity) {
     uint64_t cursor = 0;
     out[0] = 0;
@@ -788,6 +822,12 @@ uint64_t render_dynamic_proc_file(const char* normalized, char* out, uint64_t ca
     }
     if (kind == DynamicProcKind::PidStat) {
         render_proc_stat(pid, out, capacity);
+        uint64_t length = 0;
+        while (length < capacity && out[length] != 0) ++length;
+        return length;
+    }
+    if (kind == DynamicProcKind::PidMaps) {
+        render_proc_maps(pid, out, capacity);
         uint64_t length = 0;
         while (length < capacity && out[length] != 0) ++length;
         return length;
@@ -1097,6 +1137,17 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
             while (cursor < capacity && out[cursor] != 0) ++cursor;
         } else {
             append_text(out, capacity, cursor, "0 (kernel) I 0 0 0 0 0 0 0 0 0 0 0 0 0 20 0 1 0 0 0 0 0 0 0 0\n");
+        }
+        break;
+    }
+    case VirtualFileKind::ProcSelfMaps: {
+        uint64_t pid = hk::userspace::userspace_manager().current_pid();
+        if (pid != 0) {
+            render_proc_maps(pid, out, capacity);
+            cursor = 0;
+            while (cursor < capacity && out[cursor] != 0) ++cursor;
+        } else {
+            append_text(out, capacity, cursor, "# kernel address space\n");
         }
         break;
     }
@@ -2355,6 +2406,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/sys/kernel/version", VirtualFileKind::ProcVersionString);
     register_virtual_file("/proc/self/status", VirtualFileKind::ProcSelfStatus);
     register_virtual_file("/proc/self/stat", VirtualFileKind::ProcSelfStat);
+    register_virtual_file("/proc/self/maps", VirtualFileKind::ProcSelfMaps);
     register_virtual_file("/proc/self/fd", VirtualFileKind::ProcSelfFd);
     if (boot.kernel_physical_base != 0 && boot.kernel_physical_end > boot.kernel_physical_base) {
         register_memory_file("/boot/kernel.elf", boot.kernel_physical_base, boot.kernel_physical_end - boot.kernel_physical_base);
@@ -2984,12 +3036,12 @@ bool Vfs::copy_directory_entry(const char* path, uint32_t index, hybrid::VfsDire
         }
     }
     if (proc_kind == DynamicProcKind::PidDirectory) {
-        const char* names[] = {"status", "stat", "fd"};
-        if (index >= 3) return false;
+        const char* names[] = {"status", "stat", "maps", "fd"};
+        if (index >= 4) return false;
         char entry_path[64]{};
         copy_proc_pid_path(entry_path, proc_pid, names[index]);
-        out.type = index == 2 ? hybrid::VfsNodeType::Directory : hybrid::VfsNodeType::VirtualFile;
-        out.flags = index == 2 ? hybrid::VfsNodeDirectory : (hybrid::VfsNodeReadable | hybrid::VfsNodeVirtual);
+        out.type = index == 3 ? hybrid::VfsNodeType::Directory : hybrid::VfsNodeType::VirtualFile;
+        out.flags = index == 3 ? hybrid::VfsNodeDirectory : (hybrid::VfsNodeReadable | hybrid::VfsNodeVirtual);
         out.size = dynamic_proc_file_size(entry_path);
         out.links = 1;
         copy_text(out.name, names[index]);
@@ -3067,6 +3119,7 @@ bool Vfs::stat(const char* path, hybrid::VfsStatInfo& out) const {
             return true;
         }
         if (proc_kind == DynamicProcKind::PidStatus || proc_kind == DynamicProcKind::PidStat ||
+            proc_kind == DynamicProcKind::PidMaps ||
             proc_kind == DynamicProcKind::PidFdEntry) {
             out.type = hybrid::VfsNodeType::VirtualFile;
             out.flags = hybrid::VfsNodeReadable | hybrid::VfsNodeVirtual;
@@ -3161,6 +3214,7 @@ bool self_test() {
     const Node* proc_kernel_version = vfs().find("/proc/sys/kernel/version");
     const Node* proc_self_status = vfs().find("/proc/self/status");
     const Node* proc_self_stat = vfs().find("/proc/self/stat");
+    const Node* proc_self_maps = vfs().find("/proc/self/maps");
     const Node* proc_self_fd = vfs().find("/proc/self/fd");
     if (!proc_block || proc_block->type != NodeType::Directory ||
         !proc_driver || proc_driver->type != NodeType::Directory ||
@@ -3218,6 +3272,7 @@ bool self_test() {
         !proc_kernel_version || proc_kernel_version->type != NodeType::VirtualFile || proc_kernel_version->virtual_kind != VirtualFileKind::ProcVersionString ||
         !proc_self_status || proc_self_status->type != NodeType::VirtualFile || proc_self_status->virtual_kind != VirtualFileKind::ProcSelfStatus ||
         !proc_self_stat || proc_self_stat->type != NodeType::VirtualFile || proc_self_stat->virtual_kind != VirtualFileKind::ProcSelfStat ||
+        !proc_self_maps || proc_self_maps->type != NodeType::VirtualFile || proc_self_maps->virtual_kind != VirtualFileKind::ProcSelfMaps ||
         !proc_self_fd || proc_self_fd->type != NodeType::VirtualFile || proc_self_fd->virtual_kind != VirtualFileKind::ProcSelfFd) {
         return false;
     }
@@ -3295,11 +3350,14 @@ bool self_test() {
         proc_buffer[0] != 'M' || proc_buffer[22] != 'x') return false;
     if (vfs().read("/proc/self/status", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'N' || proc_buffer[4] != ':') return false;
     if (vfs().read("/proc/self/stat", 0, proc_buffer, 3) != 3 || proc_buffer[0] < '0' || proc_buffer[0] > '9' || proc_buffer[1] != ' ') return false;
+    if (vfs().read("/proc/self/maps", 0, proc_buffer, 8) != 8 ||
+        !((proc_buffer[0] == '0' && proc_buffer[1] == 'x') || proc_buffer[0] == '#')) return false;
     if (vfs().read("/proc/self/fd", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'F' || proc_buffer[3] != 'K') return false;
     hybrid::VfsStatInfo proc_init_stat{};
     if (!vfs().stat("/proc/1", proc_init_stat) || proc_init_stat.type != hybrid::VfsNodeType::Directory) return false;
     if (vfs().read("/proc/1/status", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'N' || proc_buffer[4] != ':') return false;
     if (vfs().read("/proc/1/stat", 0, proc_buffer, 3) != 3 || proc_buffer[0] != '1' || proc_buffer[1] != ' ') return false;
+    if (vfs().read("/proc/1/maps", 0, proc_buffer, 2) != 2 || proc_buffer[0] != '0' || proc_buffer[1] != 'x') return false;
     if (vfs().read("/proc/1/fd", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'F' || proc_buffer[3] != 'K') return false;
     hk::log(hk::LogLevel::Info, "VFS proc virtual file self-test");
     const Node* disk_boot = vfs().find("/disk/bootsector.bin");
@@ -3462,6 +3520,10 @@ bool self_test() {
         return false;
     }
     if (!vfs().stat("/proc/self/stat", stat_info) || stat_info.type != hybrid::VfsNodeType::VirtualFile ||
+        (stat_info.flags & hybrid::VfsNodeVirtual) == 0 || stat_info.size < 16) {
+        return false;
+    }
+    if (!vfs().stat("/proc/self/maps", stat_info) || stat_info.type != hybrid::VfsNodeType::VirtualFile ||
         (stat_info.flags & hybrid::VfsNodeVirtual) == 0 || stat_info.size < 16) {
         return false;
     }
