@@ -2399,6 +2399,7 @@ void run_boot_shell_script() {
     run_command("stat", "/proc/sys/kernel/boot_options");
     run_command("stat", "/proc/sys/kernel/machine");
     run_command("stat", "/proc/sys/kernel/modules");
+    run_command("stat", "/proc/sys/kernel/features");
     run_command("stat", "/proc/sys/kernel/abi_version");
     run_command("stat", "/proc/sys/kernel/version");
     run_command("stat", "/proc/self/status");
@@ -2594,6 +2595,7 @@ void run_boot_shell_script() {
     run_command("/bin/cat.elf", "/proc/sys/kernel/boot_options");
     run_command("/bin/cat.elf", "/proc/sys/kernel/machine");
     run_command("/bin/cat.elf", "/proc/sys/kernel/modules");
+    run_command("/bin/cat.elf", "/proc/sys/kernel/features");
     run_command("/bin/cat.elf", "/proc/sys/kernel/abi_version");
     run_command("/bin/cat.elf", "/proc/sys/kernel/version");
     run_command("/bin/cat.elf", "/proc/self/status");
@@ -2710,6 +2712,7 @@ void run_boot_shell_script() {
     run_command("/bin/sysctl.elf", "kernel.boot_options");
     run_command("/bin/sysctl.elf", "kernel.machine");
     run_command("/bin/sysctl.elf", "kernel.modules");
+    run_command("/bin/sysctl.elf", "kernel.features");
     run_command("/bin/sysctl.elf", "kernel.abi_version");
     run_command("/bin/id.elf");
     run_command("/bin/ids.elf");
