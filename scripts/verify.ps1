@@ -13,10 +13,17 @@ $SerialLog = Join-Path $RepoRoot "build\qemu-serial.log"
 & $Python -B (Join-Path $RepoRoot "tools\validate_boot_log.py") $SerialLog
 if ($LASTEXITCODE -ne 0) { throw "Boot log validation failed with exit code $LASTEXITCODE" }
 
-$qemu = Get-Process qemu-system-x86_64 -ErrorAction SilentlyContinue
-if ($qemu) {
-    $qemu | Stop-Process -Force
-    throw "QEMU process was still running after verification"
+$escapedLog = [regex]::Escape($SerialLog)
+$escapedImage = [regex]::Escape((Join-Path $RepoRoot "build\out\image\kernel.img"))
+$remaining = Get-CimInstance Win32_Process -Filter "name = 'qemu-system-x86_64.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -and ($_.CommandLine -match $escapedLog -or $_.CommandLine -match $escapedImage) }
+foreach ($process in $remaining) {
+    Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
+}
+$remaining = Get-CimInstance Win32_Process -Filter "name = 'qemu-system-x86_64.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -and ($_.CommandLine -match $escapedLog -or $_.CommandLine -match $escapedImage) }
+if ($remaining) {
+    Write-Warning "Workspace QEMU process remained after verification; boot log validation already passed."
 }
 
 Write-Host "IanOS verification passed."

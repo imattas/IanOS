@@ -304,7 +304,9 @@ framebuffer, CPU, and device inventory syscalls to print the same compact IanOS
 and Mattas identity summary that appears when the normal shell starts.
 `/bin/sysctl.elf` reads the kernel sysctl-style virtual files under
 `/proc/sys/kernel` and supports both `sysctl -a` and single-key reads such as
-`sysctl kernel.osrelease`. `/bin/find.elf` walks syscall-visible VFS nodes below
+`sysctl kernel.osrelease`; process and thread capacity limits are exposed as
+`kernel.pid_max` and `kernel.threads-max` from the same constants that size the
+kernel userspace tables. `/bin/find.elf` walks syscall-visible VFS nodes below
 a requested root path, including virtual `/proc` trees and disk-backed
 `/mnt/boot` files, and prints typed path rows.
 `/bin/lsattr.elf` reports the syscall-visible VFS attribute bits for files,
@@ -486,8 +488,9 @@ in the background with a trailing `&`; the shell records the job while the kerne
 because the prompt does not block in `Wait`.
 `/etc/hostname` is a kernel-owned rootfs file, and `/proc/sys/kernel/hostname`
 exposes the same hostname through procfs. `/proc/sys/kernel/ostype`,
-`/proc/sys/kernel/osrelease`, and `/proc/sys/kernel/version` expose kernel
-identity in the same sysctl-style tree. `/proc/heapinfo` exposes kernel heap block and allocation diagnostics. `/proc/vmstat` exposes Linux-like PMM and VMM counters. `/proc/buddyinfo` exposes PMM
+`/proc/sys/kernel/osrelease`, `/proc/sys/kernel/pid_max`,
+`/proc/sys/kernel/threads-max`, and `/proc/sys/kernel/version` expose kernel
+identity and scheduler capacity in the same sysctl-style tree. `/proc/heapinfo` exposes kernel heap block and allocation diagnostics. `/proc/vmstat` exposes Linux-like PMM and VMM counters. `/proc/buddyinfo` exposes PMM
 free-run availability by page order from the current bitmap allocator.
 `/proc/loadavg` exposes an
 instantaneous runnable/live process load snapshot. `/proc/sched_debug` exposes

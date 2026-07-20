@@ -8,6 +8,8 @@ enum class UserBlockReason : uint8_t { None, PipeRead, PipeWrite, ProcessWait, S
 
 constexpr uint64_t kDefaultUserStackTop = 0x0000007ffffff000ull;
 constexpr uint64_t kDefaultUserStackPages = 4;
+constexpr uint32_t kMaxUserProcesses = 16;
+constexpr uint32_t kMaxUserThreads = 32;
 constexpr uint32_t kMaxProcessFileDescriptors = 8;
 constexpr uint32_t kMaxOwnedUserPages = 64;
 constexpr uint32_t kMaxProcessArguments = 8;
@@ -260,8 +262,8 @@ public:
     uint64_t exited_thread_count() const;
 private:
     bool enabled_ = false;
-    Process processes_[16]{};
-    UserThread threads_[32]{};
+    Process processes_[kMaxUserProcesses]{};
+    UserThread threads_[kMaxUserThreads]{};
     Pipe pipes_[kMaxPipes]{};
     uint64_t count_ = 0;
     uint64_t thread_count_ = 0;

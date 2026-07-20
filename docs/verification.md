@@ -50,7 +50,8 @@ The verifier performs the following gates:
   generated `/proc/meminfo`, `/proc/iomem`, `/proc/buddyinfo`, `/proc/heapinfo`, `/proc/vmstat`, `/proc/uptime`, `/proc/loadavg`, `/proc/sched_debug`, `/proc/modules`, `/proc/kmsg`, `/proc/block/bootdisk`, `/proc/driver/summary`, `/proc/driver/devices`, `/proc/pci/summary`, `/proc/pci/devices`, `/proc/irq/summary`, `/proc/interrupts`, `/proc/tty/summary`, `/proc/cpu/summary`, `/proc/cpu/topology`, `/proc/net/summary`, `/proc/net/dev`, `/proc/processes`,
   `/proc/mounts`, `/proc/filesystems`, `/proc/fs/vfs`, `/proc/cmdline`,
   `/proc/stat`, `/proc/sys/kernel/hostname`, `/proc/sys/kernel/ostype`,
-  `/proc/sys/kernel/osrelease`, `/proc/sys/kernel/version`,
+  `/proc/sys/kernel/osrelease`, `/proc/sys/kernel/pid_max`,
+  `/proc/sys/kernel/threads-max`, `/proc/sys/kernel/version`,
   `/proc/self/status`, `/proc/self/stat`, `/proc/self/maps`, `/proc/self/cmdline`, `/proc/self/environ`, `/proc/self/cwd`, `/proc/self/exe`, `/proc/self/root`, `/proc/self/fd`, `/proc/self/fdinfo`, `/proc/self/limits`, `/proc/1/status`, `/proc/1/stat`, `/proc/1/maps`, `/proc/1/cmdline`, `/proc/1/environ`, `/proc/1/cwd`, `/proc/1/exe`, `/proc/1/root`, `/proc/1/fd`, `/proc/1/fdinfo`, and `/proc/1/limits` virtual-file metadata
   and reads, default `/dev/tty` fd 0/1/2 process descriptors,
   `/proc/self/fd/1` readlink and realpath resolution under stdout redirection,
@@ -61,7 +62,7 @@ The verifier performs the following gates:
   AHCI-backed `/disk/bootsector.bin`, block-cache self-test markers,
   recursive read-only FAT16 `/mnt/boot` mount proof plus userspace-visible mount-table, Linux-shaped mountinfo, and `statfs` output,
   RTC-backed external `date`, argument-backed external `cal`,
-  `/etc/hostname`, `/proc/sys/kernel/*` identity files, multi-file external `cat` and `wc`, external `hostname`, external `id`, external `groups`, external `whoami`,
+  `/etc/hostname`, `/proc/sys/kernel/*` identity and capacity files, multi-file external `cat` and `wc`, external `hostname`, external `id`, external `groups`, external `whoami`,
   VFS attribute inspection through `lsattr`,
   VFS path-component resolution through `namei`,
   recursive directory traversal through `tree`,

@@ -6,6 +6,8 @@ constexpr const char* kKeys[] = {
     "kernel.hostname",
     "kernel.ostype",
     "kernel.osrelease",
+    "kernel.pid_max",
+    "kernel.threads-max",
     "kernel.version",
 };
 
@@ -13,6 +15,8 @@ constexpr const char* kPaths[] = {
     "/proc/sys/kernel/hostname",
     "/proc/sys/kernel/ostype",
     "/proc/sys/kernel/osrelease",
+    "/proc/sys/kernel/pid_max",
+    "/proc/sys/kernel/threads-max",
     "/proc/sys/kernel/version",
 };
 
@@ -72,7 +76,7 @@ int key_index(const char* key) {
 }
 
 void print_usage() {
-    hybrid::user::write_line("[sysctl] usage sysctl [-a] [kernel.hostname|kernel.ostype|kernel.osrelease|kernel.version]");
+    hybrid::user::write_line("[sysctl] usage sysctl [-a] [kernel.hostname|kernel.ostype|kernel.osrelease|kernel.pid_max|kernel.threads-max|kernel.version]");
 }
 
 } // namespace

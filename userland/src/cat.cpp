@@ -118,13 +118,13 @@ hybrid::SyscallResult read_blocking(uint64_t fd, char* buffer, uint64_t size) {
 bool read_and_write_stream(uint64_t fd, uint64_t& total) {
     char bytes[16];
     auto read = read_blocking(fd, bytes, sizeof(bytes));
-    if (read.error != hybrid::kSyscallErrorNone || read.value < 4) {
+    if (read.error != hybrid::kSyscallErrorNone || read.value == 0) {
         write_hex_line("read error ", read.error);
         return false;
     }
     total += read.value;
     write_hex_line("bytes ", read.value);
-    write_hex_line("first32 ", first32(bytes));
+    if (read.value >= 4) write_hex_line("first32 ", first32(bytes));
     if (is_text_chunk(bytes, read.value)) {
         write_line("[cat] text");
         write_bytes(bytes, read.value);

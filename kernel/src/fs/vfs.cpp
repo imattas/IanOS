@@ -2593,6 +2593,14 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
     case VirtualFileKind::ProcOsrelease:
         append_text(out, capacity, cursor, kProcKernelOsrelease);
         break;
+    case VirtualFileKind::ProcPidMax:
+        append_decimal(out, capacity, cursor, hk::userspace::kMaxUserProcesses);
+        append_char(out, capacity, cursor, '\n');
+        break;
+    case VirtualFileKind::ProcThreadsMax:
+        append_decimal(out, capacity, cursor, hk::userspace::kMaxUserThreads);
+        append_char(out, capacity, cursor, '\n');
+        break;
     case VirtualFileKind::ProcVersionString:
         append_text(out, capacity, cursor, kProcVersion);
         break;
@@ -3004,6 +3012,8 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/sys/kernel/hostname", VirtualFileKind::ProcHostname);
     register_virtual_file("/proc/sys/kernel/ostype", VirtualFileKind::ProcOstype);
     register_virtual_file("/proc/sys/kernel/osrelease", VirtualFileKind::ProcOsrelease);
+    register_virtual_file("/proc/sys/kernel/pid_max", VirtualFileKind::ProcPidMax);
+    register_virtual_file("/proc/sys/kernel/threads-max", VirtualFileKind::ProcThreadsMax);
     register_virtual_file("/proc/sys/kernel/version", VirtualFileKind::ProcVersionString);
     register_virtual_file("/proc/self/status", VirtualFileKind::ProcSelfStatus);
     register_virtual_file("/proc/self/stat", VirtualFileKind::ProcSelfStat);
@@ -3917,6 +3927,8 @@ bool self_test() {
     const Node* proc_hostname = vfs().find("/proc/sys/kernel/hostname");
     const Node* proc_ostype = vfs().find("/proc/sys/kernel/ostype");
     const Node* proc_osrelease = vfs().find("/proc/sys/kernel/osrelease");
+    const Node* proc_pid_max = vfs().find("/proc/sys/kernel/pid_max");
+    const Node* proc_threads_max = vfs().find("/proc/sys/kernel/threads-max");
     const Node* proc_kernel_version = vfs().find("/proc/sys/kernel/version");
     const Node* proc_self_status = vfs().find("/proc/self/status");
     const Node* proc_self_stat = vfs().find("/proc/self/stat");
@@ -3986,6 +3998,8 @@ bool self_test() {
         !proc_hostname || proc_hostname->type != NodeType::VirtualFile || proc_hostname->virtual_kind != VirtualFileKind::ProcHostname ||
         !proc_ostype || proc_ostype->type != NodeType::VirtualFile || proc_ostype->virtual_kind != VirtualFileKind::ProcOstype ||
         !proc_osrelease || proc_osrelease->type != NodeType::VirtualFile || proc_osrelease->virtual_kind != VirtualFileKind::ProcOsrelease ||
+        !proc_pid_max || proc_pid_max->type != NodeType::VirtualFile || proc_pid_max->virtual_kind != VirtualFileKind::ProcPidMax ||
+        !proc_threads_max || proc_threads_max->type != NodeType::VirtualFile || proc_threads_max->virtual_kind != VirtualFileKind::ProcThreadsMax ||
         !proc_kernel_version || proc_kernel_version->type != NodeType::VirtualFile || proc_kernel_version->virtual_kind != VirtualFileKind::ProcVersionString ||
         !proc_self_status || proc_self_status->type != NodeType::VirtualFile || proc_self_status->virtual_kind != VirtualFileKind::ProcSelfStatus ||
         !proc_self_stat || proc_self_stat->type != NodeType::VirtualFile || proc_self_stat->virtual_kind != VirtualFileKind::ProcSelfStat ||
@@ -4073,6 +4087,10 @@ bool self_test() {
         proc_buffer[0] != 'I' || proc_buffer[4] != 'S' || proc_buffer[5] != '\n') return false;
     if (vfs().read("/proc/sys/kernel/osrelease", 0, proc_buffer, 15) != 15 ||
         proc_buffer[0] != '0' || proc_buffer[14] != '\n') return false;
+    if (vfs().read("/proc/sys/kernel/pid_max", 0, proc_buffer, 3) != 3 ||
+        proc_buffer[0] != '1' || proc_buffer[1] != '6' || proc_buffer[2] != '\n') return false;
+    if (vfs().read("/proc/sys/kernel/threads-max", 0, proc_buffer, 3) != 3 ||
+        proc_buffer[0] != '3' || proc_buffer[1] != '2' || proc_buffer[2] != '\n') return false;
     if (vfs().read("/proc/sys/kernel/version", 0, proc_buffer, 23) != 23 ||
         proc_buffer[0] != 'M' || proc_buffer[22] != 'x') return false;
     if (vfs().read("/proc/self/status", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'N' || proc_buffer[4] != ':') return false;

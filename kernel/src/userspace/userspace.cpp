@@ -348,7 +348,7 @@ Process* UserspaceManager::allocate_process_slot() {
     for (uint64_t i = 0; i < count_; ++i) {
         if (processes_[i].state == ProcessState::Empty) return &processes_[i];
     }
-    if (count_ >= 16) return nullptr;
+    if (count_ >= kMaxUserProcesses) return nullptr;
     return &processes_[count_++];
 }
 
@@ -356,7 +356,7 @@ UserThread* UserspaceManager::allocate_thread_slot() {
     for (uint64_t i = 0; i < thread_count_; ++i) {
         if (threads_[i].state == UserThreadState::Empty) return &threads_[i];
     }
-    if (thread_count_ >= 32) return nullptr;
+    if (thread_count_ >= kMaxUserThreads) return nullptr;
     return &threads_[thread_count_++];
 }
 
