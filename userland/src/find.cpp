@@ -77,13 +77,19 @@ extern "C" [[noreturn]] void _start() {
     }
 
     uint64_t matches = 0;
-    for (uint64_t i = 0; i < count.value && i < 256; ++i) {
+    uint64_t printed = 0;
+    constexpr uint64_t kOutputLimit = 64;
+    for (uint64_t i = 0; i < count.value; ++i) {
         hybrid::VfsNodeInfo node{};
         auto result = hybrid::user::syscall(hybrid::SyscallNumber::GetVfsNodeInfo, i, reinterpret_cast<uint64_t>(&node));
         if (result.error != hybrid::kSyscallErrorNone || !path_starts_with(node.path, stat.path)) continue;
-        write_entry(node);
+        if (printed < kOutputLimit) {
+            write_entry(node);
+            ++printed;
+        }
         ++matches;
     }
+    if (matches > printed) hybrid::user::write_hex_line("[find] ", "truncated ", matches - printed);
     write_count(matches);
     hybrid::user::exit(matches);
 }
