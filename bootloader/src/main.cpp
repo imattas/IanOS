@@ -39,6 +39,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\loadavg.elf", "/bin/loadavg.elf"},
     {L"\\bin\\scheddebug.elf", "/bin/scheddebug.elf"},
     {L"\\bin\\ps.elf", "/bin/ps.elf"},
+    {L"\\bin\\processes.elf", "/bin/processes.elf"},
     {L"\\bin\\pwd.elf", "/bin/pwd.elf"},
     {L"\\bin\\env.elf", "/bin/env.elf"},
     {L"\\bin\\printenv.elf", "/bin/printenv.elf"},
