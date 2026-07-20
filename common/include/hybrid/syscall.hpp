@@ -102,10 +102,11 @@ enum class SyscallNumber : uint64_t {
     ReadLink = 96,
     GetLimitsInfo = 97,
     GetAbiInfo = 98,
+    GetFeatureInfo = 99,
 };
 
 constexpr uint32_t kSyscallAbiVersion = 1;
-constexpr uint64_t kSyscallMaxNumber = static_cast<uint64_t>(SyscallNumber::GetAbiInfo);
+constexpr uint64_t kSyscallMaxNumber = static_cast<uint64_t>(SyscallNumber::GetFeatureInfo);
 
 constexpr uint32_t kStdinFd = 0;
 constexpr uint32_t kStdoutFd = 1;
@@ -502,6 +503,47 @@ struct [[gnu::packed]] AbiInfo {
     uint64_t file_descriptor_info_size;
     uint64_t pipe_info_size;
     uint64_t block_device_info_size;
+    uint64_t feature_info_size;
+};
+
+enum KernelFeatureFlags : uint64_t {
+    KernelFeatureUefiBoot = 1ull << 0,
+    KernelFeatureFramebufferConsole = 1ull << 1,
+    KernelFeatureSerialLog = 1ull << 2,
+    KernelFeatureGdt = 1ull << 3,
+    KernelFeatureIdt = 1ull << 4,
+    KernelFeatureSyscalls = 1ull << 5,
+    KernelFeaturePmmBitmap = 1ull << 6,
+    KernelFeatureVmmPageTables = 1ull << 7,
+    KernelFeatureKernelHeap = 1ull << 8,
+    KernelFeatureVfs = 1ull << 9,
+    KernelFeatureRamFs = 1ull << 10,
+    KernelFeatureProcFs = 1ull << 11,
+    KernelFeatureDevFs = 1ull << 12,
+    KernelFeatureFat16Mount = 1ull << 13,
+    KernelFeatureElfUserspace = 1ull << 14,
+    KernelFeatureScheduler = 1ull << 15,
+    KernelFeaturePreemption = 1ull << 16,
+    KernelFeaturePipes = 1ull << 17,
+    KernelFeatureJobControl = 1ull << 18,
+    KernelFeatureSmp = 1ull << 19,
+    KernelFeatureLocalApic = 1ull << 20,
+    KernelFeatureIoApic = 1ull << 21,
+    KernelFeaturePci = 1ull << 22,
+    KernelFeatureAhci = 1ull << 23,
+    KernelFeatureE1000 = 1ull << 24,
+    KernelFeaturePs2Keyboard = 1ull << 25,
+    KernelFeatureTtyScrollback = 1ull << 26,
+    KernelFeatureRecoveryMode = 1ull << 27,
+    KernelFeatureDebugBoot = 1ull << 28,
+    KernelFeatureBlockCache = 1ull << 29,
+};
+
+struct [[gnu::packed]] FeatureInfo {
+    uint64_t flags;
+    uint64_t experimental_flags;
+    uint64_t stable_count;
+    uint64_t experimental_count;
 };
 
 constexpr uint64_t kSyscallErrorNone = 0;

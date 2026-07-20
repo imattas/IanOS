@@ -35,11 +35,13 @@ extern "C" [[noreturn]] void _start() {
     write_value("fd_info_size ", info.file_descriptor_info_size);
     write_value("pipe_info_size ", info.pipe_info_size);
     write_value("block_device_info_size ", info.block_device_info_size);
+    write_value("feature_info_size ", info.feature_info_size);
 
     bool ok = info.abi_version == hybrid::kSyscallAbiVersion &&
         info.syscall_max_number == hybrid::kSyscallMaxNumber &&
         info.boot_info_size == sizeof(hybrid::BootInfo) &&
         info.abi_info_size == sizeof(hybrid::AbiInfo) &&
+        info.feature_info_size == sizeof(hybrid::FeatureInfo) &&
         info.system_info_size == sizeof(hybrid::SystemInfo) &&
         info.limits_info_size == sizeof(hybrid::LimitsInfo);
     hybrid::user::exit(ok ? 0 : 2);

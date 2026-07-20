@@ -761,6 +761,46 @@ Result dispatch(uint64_t number, uint64_t arg0, uint64_t arg1, uint64_t arg2, ui
         out->file_descriptor_info_size = sizeof(hybrid::FileDescriptorInfo);
         out->pipe_info_size = sizeof(hybrid::PipeInfo);
         out->block_device_info_size = sizeof(hybrid::BlockDeviceInfo);
+        out->feature_info_size = sizeof(hybrid::FeatureInfo);
+        return {1, kErrorNone};
+    }
+    case Number::GetFeatureInfo: {
+        auto* out = reinterpret_cast<hybrid::FeatureInfo*>(arg0);
+        if (!out || !user_buffer_writable(reinterpret_cast<char*>(out), sizeof(*out))) return {0, kErrorInvalidPointer};
+        out->flags =
+            hybrid::KernelFeatureUefiBoot |
+            hybrid::KernelFeatureFramebufferConsole |
+            hybrid::KernelFeatureSerialLog |
+            hybrid::KernelFeatureGdt |
+            hybrid::KernelFeatureIdt |
+            hybrid::KernelFeatureSyscalls |
+            hybrid::KernelFeaturePmmBitmap |
+            hybrid::KernelFeatureVmmPageTables |
+            hybrid::KernelFeatureKernelHeap |
+            hybrid::KernelFeatureVfs |
+            hybrid::KernelFeatureRamFs |
+            hybrid::KernelFeatureProcFs |
+            hybrid::KernelFeatureDevFs |
+            hybrid::KernelFeatureFat16Mount |
+            hybrid::KernelFeatureElfUserspace |
+            hybrid::KernelFeatureScheduler |
+            hybrid::KernelFeaturePreemption |
+            hybrid::KernelFeaturePipes |
+            hybrid::KernelFeatureJobControl |
+            hybrid::KernelFeatureSmp |
+            hybrid::KernelFeatureLocalApic |
+            hybrid::KernelFeatureIoApic |
+            hybrid::KernelFeaturePci |
+            hybrid::KernelFeatureAhci |
+            hybrid::KernelFeatureE1000 |
+            hybrid::KernelFeaturePs2Keyboard |
+            hybrid::KernelFeatureTtyScrollback |
+            hybrid::KernelFeatureRecoveryMode |
+            hybrid::KernelFeatureDebugBoot |
+            hybrid::KernelFeatureBlockCache;
+        out->experimental_flags = 0;
+        out->stable_count = 30;
+        out->experimental_count = 0;
         return {1, kErrorNone};
     }
     case Number::ReadKernelLog: {
@@ -1369,6 +1409,7 @@ bool self_test() {
         abi_info.syscall_max_number != hybrid::kSyscallMaxNumber ||
         abi_info.boot_info_size != sizeof(hybrid::BootInfo) ||
         abi_info.abi_info_size != sizeof(hybrid::AbiInfo) ||
+        abi_info.feature_info_size != sizeof(hybrid::FeatureInfo) ||
         abi_info.system_info_size != sizeof(hybrid::SystemInfo) ||
         abi_info.limits_info_size != sizeof(hybrid::LimitsInfo)) {
         hk::log_hex(hk::LogLevel::Error, "syscall self-test abi-info error", abi_result.error);
@@ -1377,6 +1418,24 @@ bool self_test() {
         return false;
     }
     hk::log(hk::LogLevel::Info, "syscall abi info self-test");
+    hybrid::FeatureInfo feature_info{};
+    auto feature_result = dispatch(static_cast<uint64_t>(Number::GetFeatureInfo), reinterpret_cast<uint64_t>(&feature_info), 0, 0, 0);
+    constexpr uint64_t required_features =
+        hybrid::KernelFeatureUefiBoot |
+        hybrid::KernelFeatureSyscalls |
+        hybrid::KernelFeatureVfs |
+        hybrid::KernelFeatureElfUserspace |
+        hybrid::KernelFeatureScheduler |
+        hybrid::KernelFeaturePci;
+    if (feature_result.error != kErrorNone || feature_result.value != 1 ||
+        (feature_info.flags & required_features) != required_features ||
+        feature_info.stable_count < 6 || feature_info.experimental_count != 0) {
+        hk::log_hex(hk::LogLevel::Error, "syscall self-test feature-info error", feature_result.error);
+        hk::log_hex(hk::LogLevel::Error, "syscall self-test feature-info value", feature_result.value);
+        hk::log_hex(hk::LogLevel::Error, "syscall self-test feature flags", feature_info.flags);
+        return false;
+    }
+    hk::log(hk::LogLevel::Info, "syscall feature info self-test");
     char kernel_log_sample[128]{};
     auto kernel_log_read = dispatch(static_cast<uint64_t>(Number::ReadKernelLog), reinterpret_cast<uint64_t>(kernel_log_sample), sizeof(kernel_log_sample), 0, 0);
     if (kernel_log_read.error != kErrorNone || kernel_log_read.value == 0) {

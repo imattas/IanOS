@@ -3080,10 +3080,10 @@ bool self_test() {
         proc_buffer[0] != 'i' || proc_buffer[4] != 's' || proc_buffer[5] != '\n') return false;
     if (vfs().read("/proc/sys/kernel/ostype", 0, proc_buffer, 6) != 6 ||
         proc_buffer[0] != 'I' || proc_buffer[4] != 'S' || proc_buffer[5] != '\n') return false;
-    if (vfs().read("/proc/sys/kernel/osrelease", 0, proc_buffer, 14) != 14 ||
-        proc_buffer[0] != '0' || proc_buffer[13] != '\n') return false;
-    if (vfs().read("/proc/sys/kernel/version", 0, proc_buffer, 22) != 22 ||
-        proc_buffer[0] != 'M' || proc_buffer[21] != 'x') return false;
+    if (vfs().read("/proc/sys/kernel/osrelease", 0, proc_buffer, 15) != 15 ||
+        proc_buffer[0] != '0' || proc_buffer[14] != '\n') return false;
+    if (vfs().read("/proc/sys/kernel/version", 0, proc_buffer, 23) != 23 ||
+        proc_buffer[0] != 'M' || proc_buffer[22] != 'x') return false;
     if (vfs().read("/proc/self/status", 0, proc_buffer, 6) != 6 || proc_buffer[0] != 'N' || proc_buffer[4] != ':') return false;
     if (vfs().read("/proc/self/fd", 0, proc_buffer, 7) != 7 || proc_buffer[0] != 'F' || proc_buffer[3] != 'K') return false;
     hybrid::VfsStatInfo proc_init_stat{};
