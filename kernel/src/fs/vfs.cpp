@@ -2646,6 +2646,10 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_text(out, capacity, cursor, HYBRID_MACHINE);
         append_char(out, capacity, cursor, '\n');
         break;
+    case VirtualFileKind::ProcModuleCount:
+        append_decimal(out, capacity, cursor, boot_module_count);
+        append_char(out, capacity, cursor, '\n');
+        break;
     case VirtualFileKind::ProcAbiVersion:
         append_hex(out, capacity, cursor, hybrid::kSyscallAbiVersion);
         append_char(out, capacity, cursor, '\n');
@@ -3067,6 +3071,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/sys/kernel/boot_flags", VirtualFileKind::ProcBootFlags);
     register_virtual_file("/proc/sys/kernel/boot_options", VirtualFileKind::ProcBootOptions);
     register_virtual_file("/proc/sys/kernel/machine", VirtualFileKind::ProcMachine);
+    register_virtual_file("/proc/sys/kernel/modules", VirtualFileKind::ProcModuleCount);
     register_virtual_file("/proc/sys/kernel/abi_version", VirtualFileKind::ProcAbiVersion);
     register_virtual_file("/proc/sys/kernel/version", VirtualFileKind::ProcVersionString);
     register_virtual_file("/proc/self/status", VirtualFileKind::ProcSelfStatus);
@@ -3987,6 +3992,7 @@ bool self_test() {
     const Node* proc_boot_flags = vfs().find("/proc/sys/kernel/boot_flags");
     const Node* proc_boot_options = vfs().find("/proc/sys/kernel/boot_options");
     const Node* proc_machine = vfs().find("/proc/sys/kernel/machine");
+    const Node* proc_module_count = vfs().find("/proc/sys/kernel/modules");
     const Node* proc_abi_version = vfs().find("/proc/sys/kernel/abi_version");
     const Node* proc_kernel_version = vfs().find("/proc/sys/kernel/version");
     const Node* proc_self_status = vfs().find("/proc/self/status");
@@ -4063,6 +4069,7 @@ bool self_test() {
         !proc_boot_flags || proc_boot_flags->type != NodeType::VirtualFile || proc_boot_flags->virtual_kind != VirtualFileKind::ProcBootFlags ||
         !proc_boot_options || proc_boot_options->type != NodeType::VirtualFile || proc_boot_options->virtual_kind != VirtualFileKind::ProcBootOptions ||
         !proc_machine || proc_machine->type != NodeType::VirtualFile || proc_machine->virtual_kind != VirtualFileKind::ProcMachine ||
+        !proc_module_count || proc_module_count->type != NodeType::VirtualFile || proc_module_count->virtual_kind != VirtualFileKind::ProcModuleCount ||
         !proc_abi_version || proc_abi_version->type != NodeType::VirtualFile || proc_abi_version->virtual_kind != VirtualFileKind::ProcAbiVersion ||
         !proc_kernel_version || proc_kernel_version->type != NodeType::VirtualFile || proc_kernel_version->virtual_kind != VirtualFileKind::ProcVersionString ||
         !proc_self_status || proc_self_status->type != NodeType::VirtualFile || proc_self_status->virtual_kind != VirtualFileKind::ProcSelfStatus ||
@@ -4164,6 +4171,8 @@ bool self_test() {
         (proc_buffer[0] != 'n' && proc_buffer[0] != 'r' && proc_buffer[0] != 'd')) return false;
     if (vfs().read("/proc/sys/kernel/machine", 0, proc_buffer, 7) != 7 ||
         proc_buffer[0] != 'x' || proc_buffer[3] != '_' || proc_buffer[6] != '\n') return false;
+    if (vfs().read("/proc/sys/kernel/modules", 0, proc_buffer, 2) != 2 ||
+        proc_buffer[0] < '1' || proc_buffer[0] > '9') return false;
     if (vfs().read("/proc/sys/kernel/abi_version", 0, proc_buffer, 18) != 18 ||
         proc_buffer[0] != '0' || proc_buffer[1] != 'x') return false;
     if (vfs().read("/proc/sys/kernel/version", 0, proc_buffer, 23) != 23 ||

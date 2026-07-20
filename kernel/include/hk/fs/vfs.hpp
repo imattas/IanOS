@@ -72,6 +72,7 @@ enum class VirtualFileKind : uint8_t {
     ProcBootFlags,
     ProcBootOptions,
     ProcMachine,
+    ProcModuleCount,
     ProcAbiVersion,
     ProcVersionString,
 };
