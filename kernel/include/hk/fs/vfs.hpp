@@ -41,6 +41,7 @@ enum class VirtualFileKind : uint8_t {
     ProcKmsg,
     ProcNetSummary,
     ProcNetDev,
+    ProcNetRoute,
     ProcModules,
     ProcCmdline,
     ProcHostname,

@@ -9,6 +9,7 @@ struct Buffer {
 
 Buffer g_summary;
 Buffer g_dev;
+Buffer g_route;
 char g_chunk[16];
 
 bool same_text(const char* left, const char* right, uint64_t count) {
@@ -91,6 +92,13 @@ void process_dev_line(const char* line, uint64_t length, uint64_t& emitted) {
     }
 }
 
+void process_route_line(const char* line, uint64_t length, uint64_t& emitted) {
+    if (starts_with(line, length, "Iface ") || starts_with(line, length, "eth0 ")) {
+        emit_line("route ", line, length);
+        ++emitted;
+    }
+}
+
 template <typename Fn>
 uint64_t for_each_line(const Buffer& buffer, Fn fn) {
     uint64_t emitted = 0;
@@ -110,15 +118,19 @@ uint64_t for_each_line(const Buffer& buffer, Fn fn) {
 extern "C" [[noreturn]] void _start() {
     bool summary_ok = read_file("/proc/net/summary", g_summary);
     bool dev_ok = read_file("/proc/net/dev", g_dev);
-    if (!summary_ok || !dev_ok) {
+    bool route_ok = read_file("/proc/net/route", g_route);
+    if (!summary_ok || !dev_ok || !route_ok) {
         hybrid::user::write_hex_line("[netstat] ", "summary ok ", summary_ok ? 1 : 0);
         hybrid::user::write_hex_line("[netstat] ", "dev ok ", dev_ok ? 1 : 0);
+        hybrid::user::write_hex_line("[netstat] ", "route ok ", route_ok ? 1 : 0);
         hybrid::user::exit(1);
     }
 
     uint64_t summary_lines = for_each_line(g_summary, process_summary_line);
     uint64_t dev_lines = for_each_line(g_dev, process_dev_line);
+    uint64_t route_lines = for_each_line(g_route, process_route_line);
     hybrid::user::write_hex_line("[netstat] ", "summary lines ", summary_lines);
     hybrid::user::write_hex_line("[netstat] ", "dev lines ", dev_lines);
-    hybrid::user::exit(summary_lines != 0 && dev_lines != 0 ? 0 : 2);
+    hybrid::user::write_hex_line("[netstat] ", "route lines ", route_lines);
+    hybrid::user::exit(summary_lines != 0 && dev_lines != 0 && route_lines != 0 ? 0 : 2);
 }

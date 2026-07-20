@@ -1490,6 +1490,19 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         }
         break;
     }
+    case VirtualFileKind::ProcNetRoute: {
+        const auto& adapter = hk::drivers::e1000::driver().adapter();
+        append_text(out, capacity, cursor, "Iface Destination Gateway Flags RefCnt Use Metric Mask MTU Window IRTT\n");
+        if (adapter.present) {
+            const uint64_t use_count = adapter.rx_packets_received + adapter.tx_packets_submitted;
+            append_text(out, capacity, cursor, "eth0 00000000 00000000 ");
+            append_text(out, capacity, cursor, adapter.link_up ? "0001" : "0000");
+            append_text(out, capacity, cursor, " 0 ");
+            append_decimal(out, capacity, cursor, use_count);
+            append_text(out, capacity, cursor, " 100 00000000 1500 0 0\n");
+        }
+        break;
+    }
     case VirtualFileKind::ProcKmsg: {
         uint64_t copied = hk::copy_kernel_log(out, capacity, 0);
         cursor = copied;
@@ -1914,6 +1927,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/kmsg", VirtualFileKind::ProcKmsg);
     register_virtual_file("/proc/net/summary", VirtualFileKind::ProcNetSummary);
     register_virtual_file("/proc/net/dev", VirtualFileKind::ProcNetDev);
+    register_virtual_file("/proc/net/route", VirtualFileKind::ProcNetRoute);
     register_virtual_file("/proc/cmdline", VirtualFileKind::ProcCmdline);
     register_virtual_file("/proc/sys/kernel/hostname", VirtualFileKind::ProcHostname);
     register_virtual_file("/proc/sys/kernel/ostype", VirtualFileKind::ProcOstype);
@@ -2698,6 +2712,7 @@ bool self_test() {
     const Node* proc_net = vfs().find("/proc/net");
     const Node* proc_net_summary = vfs().find("/proc/net/summary");
     const Node* proc_net_dev = vfs().find("/proc/net/dev");
+    const Node* proc_net_route = vfs().find("/proc/net/route");
     const Node* proc_self = vfs().find("/proc/self");
     const Node* proc_meminfo = vfs().find("/proc/meminfo");
     const Node* proc_iomem = vfs().find("/proc/iomem");
@@ -2762,6 +2777,7 @@ bool self_test() {
         !proc_kmsg || proc_kmsg->type != NodeType::VirtualFile || proc_kmsg->virtual_kind != VirtualFileKind::ProcKmsg ||
         !proc_net_summary || proc_net_summary->type != NodeType::VirtualFile || proc_net_summary->virtual_kind != VirtualFileKind::ProcNetSummary ||
         !proc_net_dev || proc_net_dev->type != NodeType::VirtualFile || proc_net_dev->virtual_kind != VirtualFileKind::ProcNetDev ||
+        !proc_net_route || proc_net_route->type != NodeType::VirtualFile || proc_net_route->virtual_kind != VirtualFileKind::ProcNetRoute ||
         !proc_cmdline || proc_cmdline->type != NodeType::VirtualFile || proc_cmdline->virtual_kind != VirtualFileKind::ProcCmdline ||
         !proc_hostname || proc_hostname->type != NodeType::VirtualFile || proc_hostname->virtual_kind != VirtualFileKind::ProcHostname ||
         !proc_ostype || proc_ostype->type != NodeType::VirtualFile || proc_ostype->virtual_kind != VirtualFileKind::ProcOstype ||
@@ -2823,6 +2839,8 @@ bool self_test() {
     if (vfs().read("/proc/net/summary", 0, proc_buffer, 10) != 10 ||
         proc_buffer[0] != 'i' || proc_buffer[9] != 's') return false;
     if (vfs().read("/proc/net/dev", 0, proc_buffer, 6) != 6 ||
+        proc_buffer[0] != 'I' || proc_buffer[5] != ' ') return false;
+    if (vfs().read("/proc/net/route", 0, proc_buffer, 6) != 6 ||
         proc_buffer[0] != 'I' || proc_buffer[5] != ' ') return false;
     if (vfs().read("/proc/cmdline", 0, proc_buffer, 11) != 11 || proc_buffer[0] != 'B' || proc_buffer[10] != '=') return false;
     if (vfs().read("/proc/sys/kernel/hostname", 0, proc_buffer, 6) != 6 ||

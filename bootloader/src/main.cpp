@@ -134,6 +134,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\heapinfo.elf", "/bin/heapinfo.elf"},
     {L"\\bin\\procvmstat.elf", "/bin/procvmstat.elf"},
     {L"\\bin\\netstat.elf", "/bin/netstat.elf"},
+    {L"\\bin\\route.elf", "/bin/route.elf"},
     {L"\\bin\\lsmod.elf", "/bin/lsmod.elf"},
     {L"\\bin\\pipeinfo.elf", "/bin/pipeinfo.elf"},
     {L"\\bin\\kill.elf", "/bin/kill.elf"},
