@@ -252,6 +252,9 @@ bootloader-supplied kernel and userland module table from userspace.
 address-space root, image mapping, user stack mapping, owned page count, and
 open descriptor count. Without arguments it reports the current process; with a
 PID argument it reports that process.
+`/bin/version.elf` cross-checks `GetSystemInfo` against
+`/proc/sys/kernel/osrelease` and `/proc/sys/kernel/version` so release metadata
+is visible through one command and validated across both ABI paths.
 `/bin/kmsg.elf` reads `/proc/kmsg` through ordinary VFS open/read syscalls and
 streams the retained kernel ring buffer with byte and line counters, while
 `/bin/dmesg.elf` continues to exercise the direct kernel-log syscall.
