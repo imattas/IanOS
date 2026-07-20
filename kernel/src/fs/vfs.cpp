@@ -103,6 +103,8 @@ constexpr KernelFeatureName kKernelFeatures[] = {
     {hybrid::KernelFeatureRecoveryMode, "recovery_mode"},
     {hybrid::KernelFeatureDebugBoot, "debug_boot"},
     {hybrid::KernelFeatureBlockCache, "block_cache"},
+    {hybrid::KernelFeatureProcfsTasks, "procfs_tasks"},
+    {hybrid::KernelFeatureProcfsIo, "procfs_io"},
 };
 
 constexpr uint64_t kKernelStableFeatures =
@@ -135,7 +137,9 @@ constexpr uint64_t kKernelStableFeatures =
     hybrid::KernelFeatureTtyScrollback |
     hybrid::KernelFeatureRecoveryMode |
     hybrid::KernelFeatureDebugBoot |
-    hybrid::KernelFeatureBlockCache;
+    hybrid::KernelFeatureBlockCache |
+    hybrid::KernelFeatureProcfsTasks |
+    hybrid::KernelFeatureProcfsIo;
 
 constexpr uint64_t kKernelStableFeatureCount = sizeof(kKernelFeatures) / sizeof(kKernelFeatures[0]);
 

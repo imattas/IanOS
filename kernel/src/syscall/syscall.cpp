@@ -797,9 +797,11 @@ Result dispatch(uint64_t number, uint64_t arg0, uint64_t arg1, uint64_t arg2, ui
             hybrid::KernelFeatureTtyScrollback |
             hybrid::KernelFeatureRecoveryMode |
             hybrid::KernelFeatureDebugBoot |
-            hybrid::KernelFeatureBlockCache;
+            hybrid::KernelFeatureBlockCache |
+            hybrid::KernelFeatureProcfsTasks |
+            hybrid::KernelFeatureProcfsIo;
         out->experimental_flags = 0;
-        out->stable_count = 30;
+        out->stable_count = 32;
         out->experimental_count = 0;
         return {1, kErrorNone};
     }

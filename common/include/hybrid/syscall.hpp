@@ -541,6 +541,8 @@ enum KernelFeatureFlags : uint64_t {
     KernelFeatureRecoveryMode = 1ull << 27,
     KernelFeatureDebugBoot = 1ull << 28,
     KernelFeatureBlockCache = 1ull << 29,
+    KernelFeatureProcfsTasks = 1ull << 30,
+    KernelFeatureProcfsIo = 1ull << 31,
 };
 
 struct [[gnu::packed]] FeatureInfo {

@@ -38,6 +38,8 @@ constexpr FeatureName kFeatures[] = {
     {hybrid::KernelFeatureRecoveryMode, "recovery_mode"},
     {hybrid::KernelFeatureDebugBoot, "debug_boot"},
     {hybrid::KernelFeatureBlockCache, "block_cache"},
+    {hybrid::KernelFeatureProcfsTasks, "procfs_tasks"},
+    {hybrid::KernelFeatureProcfsIo, "procfs_io"},
 };
 
 void write_value(const char* label, uint64_t value) {
@@ -72,7 +74,9 @@ extern "C" [[noreturn]] void _start() {
         hybrid::KernelFeatureVfs |
         hybrid::KernelFeatureElfUserspace |
         hybrid::KernelFeatureScheduler |
-        hybrid::KernelFeaturePci;
+        hybrid::KernelFeaturePci |
+        hybrid::KernelFeatureProcfsTasks |
+        hybrid::KernelFeatureProcfsIo;
     bool ok = (info.flags & required) == required &&
         info.stable_count == sizeof(kFeatures) / sizeof(kFeatures[0]) &&
         info.experimental_count == 0;
