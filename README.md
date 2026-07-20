@@ -48,7 +48,11 @@ The final bootable FAT16 disk image is written to
 `build/out/image/kernel.img`. Build intermediates such as `BOOTX64.EFI`,
 `kernel.elf`, `init.elf`, user command ELFs, and the manifest remain under
 `build/out` for inspection. The editable ESP staging directory used by QEMU is
-assembled at `build/esp`.
+assembled at `build/esp`. `scripts/build.ps1` and `scripts/run.ps1` also print
+an image report with the fixed disk-image byte size, FAT capacity, estimated
+allocated payload bytes, free estimate, file counts, and key artifact sizes so
+kernel and userland growth is visible even when `kernel.img` capacity stays the
+same.
 
 ## Run
 

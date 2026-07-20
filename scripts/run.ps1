@@ -60,6 +60,8 @@ if (-not $Python) { throw "py.exe was not found." }
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $DiskImage) | Out-Null
 & $Python.Source -B (Join-Path $RepoRoot "tools\make_fat_image.py") $EspDir $DiskImage
 if ($LASTEXITCODE -ne 0) { throw "Failed to build FAT disk image $DiskImage" }
+& $Python.Source -B (Join-Path $RepoRoot "tools\image_report.py") $EspDir $DiskImage
+if ($LASTEXITCODE -ne 0) { throw "Failed to report FAT disk image $DiskImage" }
 
 function Stop-StaleQemuForWorkspace {
     $escapedLog = [regex]::Escape($SerialLog)

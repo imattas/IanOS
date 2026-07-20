@@ -12,6 +12,7 @@ if (-not $Nasm) {
     if (Test-Path $candidate) { $Nasm = Get-Item $candidate }
 }
 if (-not $Nasm) { throw "NASM was not found on PATH or in the expected local install path." }
+$Python = (Get-Command py.exe -ErrorAction Stop).Source
 
 & $CMake -S $RepoRoot -B $BuildDir -G Ninja "-DCMAKE_ASM_NASM_COMPILER=$($Nasm.Source)" "-DCMAKE_BUILD_TYPE=$Configuration"
 if ($LASTEXITCODE -ne 0) { throw "CMake configure failed with exit code $LASTEXITCODE" }
@@ -31,3 +32,5 @@ if (-not (Test-Path $Image)) { throw "Expected final image was not created at $I
 $LegacyImage = Join-Path $OutDir "kernel.img"
 if (Test-Path $LegacyImage) { Remove-Item $LegacyImage -Force }
 Write-Host "Final image: $Image"
+& $Python -B (Join-Path $RepoRoot "tools\image_report.py") (Join-Path $BuildDir "esp") $Image
+if ($LASTEXITCODE -ne 0) { throw "Image report failed with exit code $LASTEXITCODE" }
