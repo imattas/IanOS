@@ -1157,6 +1157,10 @@ void render_proc_limits(uint64_t pid, char* out, uint64_t capacity) {
     hybrid::ProcessInfo process{};
     if (!process_info_by_pid(pid, process)) return;
     append_text(out, capacity, cursor, "Limit\tSoft Limit\tHard Limit\tUnits\n");
+    append_proc_limits_row(out, capacity, cursor, "Max processes", hk::userspace::kMaxUserProcesses,
+                           hk::userspace::kMaxUserProcesses, "processes");
+    append_proc_limits_row(out, capacity, cursor, "Max user threads", hk::userspace::kMaxUserThreads,
+                           hk::userspace::kMaxUserThreads, "threads");
     append_proc_limits_row(out, capacity, cursor, "Max open files", hk::userspace::kMaxProcessFileDescriptors,
                            hk::userspace::kMaxProcessFileDescriptors, "files");
     append_proc_limits_row(out, capacity, cursor, "Max address pages", hk::userspace::kMaxOwnedUserPages,

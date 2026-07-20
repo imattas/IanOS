@@ -266,7 +266,8 @@ count, proving the procfs path is usable outside kernel metadata syscalls.
 `/bin/procroot.elf` reads `/proc/self/root` or `/proc/<pid>/root`;
 `/bin/procfdinfo.elf` reads `/proc/self/fdinfo`, `/proc/<pid>/fdinfo`, or
 `/proc/<pid>/fdinfo/<fd>`; `/bin/proclimits.elf` reads
-`/proc/self/limits` or `/proc/<pid>/limits` through the same descriptor path;
+`/proc/self/limits` or `/proc/<pid>/limits` through the same descriptor path,
+including process, user-thread, fd, address-space, and heap capacity rows;
 `/bin/procio.elf` reads `/proc/self/io` or `/proc/<pid>/io`, exposing per-process
 read/write syscall and byte counters gathered by the kernel fd layer;
 `/bin/proctask.elf` lists `/proc/self/task` or `/proc/<pid>/task` and streams
