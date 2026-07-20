@@ -52,6 +52,19 @@ const char* boot_mode_name() {
     return "uefi";
 }
 
+uint64_t cpu_mask_for_flag(uint32_t flag) {
+    uint64_t mask = 0;
+    auto& topology = hk::cpu::topology();
+    auto& runtime = hk::cpu::runtime();
+    for (uint32_t i = 0; i < topology.cpu_count() && i < 64; ++i) {
+        hybrid::CpuInfo info{};
+        if (!topology.copy_info(i, info)) continue;
+        runtime.decorate_cpu_info(i, info);
+        if ((info.flags & flag) != 0) mask |= (1ull << i);
+    }
+    return mask;
+}
+
 constexpr uint32_t kMaxMountedFatNodes = 256;
 constexpr uint64_t kVirtualFileScratchBytes = 8192;
 char mounted_fat_paths[kMaxMountedFatNodes][64]{};
@@ -2634,6 +2647,18 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_decimal(out, capacity, cursor, hk::cpu::topology().online_count());
         append_char(out, capacity, cursor, '\n');
         break;
+    case VirtualFileKind::ProcCpuOnlineMask:
+        append_hex(out, capacity, cursor, cpu_mask_for_flag(hybrid::CpuInfoOnline));
+        append_char(out, capacity, cursor, '\n');
+        break;
+    case VirtualFileKind::ProcCpuSchedulerMask:
+        append_hex(out, capacity, cursor, cpu_mask_for_flag(hybrid::CpuInfoScheduler));
+        append_char(out, capacity, cursor, '\n');
+        break;
+    case VirtualFileKind::ProcCpuParkedMask:
+        append_hex(out, capacity, cursor, cpu_mask_for_flag(hybrid::CpuInfoParked));
+        append_char(out, capacity, cursor, '\n');
+        break;
     case VirtualFileKind::ProcBootMode:
         append_text(out, capacity, cursor, boot_mode_name());
         append_char(out, capacity, cursor, '\n');
@@ -3081,6 +3106,9 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/sys/kernel/threads-max", VirtualFileKind::ProcThreadsMax);
     register_virtual_file("/proc/sys/kernel/cpus", VirtualFileKind::ProcCpuCount);
     register_virtual_file("/proc/sys/kernel/online_cpus", VirtualFileKind::ProcOnlineCpuCount);
+    register_virtual_file("/proc/sys/kernel/cpu_online_mask", VirtualFileKind::ProcCpuOnlineMask);
+    register_virtual_file("/proc/sys/kernel/cpu_scheduler_mask", VirtualFileKind::ProcCpuSchedulerMask);
+    register_virtual_file("/proc/sys/kernel/cpu_parked_mask", VirtualFileKind::ProcCpuParkedMask);
     register_virtual_file("/proc/sys/kernel/boot_mode", VirtualFileKind::ProcBootMode);
     register_virtual_file("/proc/sys/kernel/boot_flags", VirtualFileKind::ProcBootFlags);
     register_virtual_file("/proc/sys/kernel/boot_options", VirtualFileKind::ProcBootOptions);
@@ -4005,6 +4033,9 @@ bool self_test() {
     const Node* proc_threads_max = vfs().find("/proc/sys/kernel/threads-max");
     const Node* proc_cpu_count = vfs().find("/proc/sys/kernel/cpus");
     const Node* proc_online_cpu_count = vfs().find("/proc/sys/kernel/online_cpus");
+    const Node* proc_cpu_online_mask = vfs().find("/proc/sys/kernel/cpu_online_mask");
+    const Node* proc_cpu_scheduler_mask = vfs().find("/proc/sys/kernel/cpu_scheduler_mask");
+    const Node* proc_cpu_parked_mask = vfs().find("/proc/sys/kernel/cpu_parked_mask");
     const Node* proc_boot_mode = vfs().find("/proc/sys/kernel/boot_mode");
     const Node* proc_boot_flags = vfs().find("/proc/sys/kernel/boot_flags");
     const Node* proc_boot_options = vfs().find("/proc/sys/kernel/boot_options");
@@ -4085,6 +4116,9 @@ bool self_test() {
         !proc_threads_max || proc_threads_max->type != NodeType::VirtualFile || proc_threads_max->virtual_kind != VirtualFileKind::ProcThreadsMax ||
         !proc_cpu_count || proc_cpu_count->type != NodeType::VirtualFile || proc_cpu_count->virtual_kind != VirtualFileKind::ProcCpuCount ||
         !proc_online_cpu_count || proc_online_cpu_count->type != NodeType::VirtualFile || proc_online_cpu_count->virtual_kind != VirtualFileKind::ProcOnlineCpuCount ||
+        !proc_cpu_online_mask || proc_cpu_online_mask->type != NodeType::VirtualFile || proc_cpu_online_mask->virtual_kind != VirtualFileKind::ProcCpuOnlineMask ||
+        !proc_cpu_scheduler_mask || proc_cpu_scheduler_mask->type != NodeType::VirtualFile || proc_cpu_scheduler_mask->virtual_kind != VirtualFileKind::ProcCpuSchedulerMask ||
+        !proc_cpu_parked_mask || proc_cpu_parked_mask->type != NodeType::VirtualFile || proc_cpu_parked_mask->virtual_kind != VirtualFileKind::ProcCpuParkedMask ||
         !proc_boot_mode || proc_boot_mode->type != NodeType::VirtualFile || proc_boot_mode->virtual_kind != VirtualFileKind::ProcBootMode ||
         !proc_boot_flags || proc_boot_flags->type != NodeType::VirtualFile || proc_boot_flags->virtual_kind != VirtualFileKind::ProcBootFlags ||
         !proc_boot_options || proc_boot_options->type != NodeType::VirtualFile || proc_boot_options->virtual_kind != VirtualFileKind::ProcBootOptions ||
@@ -4187,6 +4221,12 @@ bool self_test() {
         proc_buffer[0] < '1' || proc_buffer[0] > '9' || proc_buffer[1] != '\n') return false;
     if (vfs().read("/proc/sys/kernel/online_cpus", 0, proc_buffer, 2) != 2 ||
         proc_buffer[0] < '1' || proc_buffer[0] > '9' || proc_buffer[1] != '\n') return false;
+    if (vfs().read("/proc/sys/kernel/cpu_online_mask", 0, proc_buffer, 18) != 18 ||
+        proc_buffer[0] != '0' || proc_buffer[1] != 'x') return false;
+    if (vfs().read("/proc/sys/kernel/cpu_scheduler_mask", 0, proc_buffer, 18) != 18 ||
+        proc_buffer[0] != '0' || proc_buffer[1] != 'x') return false;
+    if (vfs().read("/proc/sys/kernel/cpu_parked_mask", 0, proc_buffer, 18) != 18 ||
+        proc_buffer[0] != '0' || proc_buffer[1] != 'x') return false;
     if (vfs().read("/proc/sys/kernel/boot_mode", 0, proc_buffer, 5) != 5 ||
         proc_buffer[0] != 'u' || proc_buffer[1] != 'e' || proc_buffer[2] != 'f' || proc_buffer[3] != 'i' ||
         (proc_buffer[4] != '\n' && proc_buffer[4] != '-')) return false;

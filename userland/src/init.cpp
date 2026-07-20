@@ -2396,6 +2396,9 @@ void run_boot_shell_script() {
     run_command("stat", "/proc/sys/kernel/threads-max");
     run_command("stat", "/proc/sys/kernel/cpus");
     run_command("stat", "/proc/sys/kernel/online_cpus");
+    run_command("stat", "/proc/sys/kernel/cpu_online_mask");
+    run_command("stat", "/proc/sys/kernel/cpu_scheduler_mask");
+    run_command("stat", "/proc/sys/kernel/cpu_parked_mask");
     run_command("stat", "/proc/sys/kernel/boot_mode");
     run_command("stat", "/proc/sys/kernel/boot_flags");
     run_command("stat", "/proc/sys/kernel/boot_options");
@@ -2594,6 +2597,9 @@ void run_boot_shell_script() {
     run_command("/bin/cat.elf", "/proc/sys/kernel/threads-max");
     run_command("/bin/cat.elf", "/proc/sys/kernel/cpus");
     run_command("/bin/cat.elf", "/proc/sys/kernel/online_cpus");
+    run_command("/bin/cat.elf", "/proc/sys/kernel/cpu_online_mask");
+    run_command("/bin/cat.elf", "/proc/sys/kernel/cpu_scheduler_mask");
+    run_command("/bin/cat.elf", "/proc/sys/kernel/cpu_parked_mask");
     run_command("/bin/cat.elf", "/proc/sys/kernel/boot_mode");
     run_command("/bin/cat.elf", "/proc/sys/kernel/boot_flags");
     run_command("/bin/cat.elf", "/proc/sys/kernel/boot_options");
@@ -2713,6 +2719,9 @@ void run_boot_shell_script() {
     run_command("/bin/sysctl.elf", "kernel.threads-max");
     run_command("/bin/sysctl.elf", "kernel.cpus");
     run_command("/bin/sysctl.elf", "kernel.online_cpus");
+    run_command("/bin/sysctl.elf", "kernel.cpu_online_mask");
+    run_command("/bin/sysctl.elf", "kernel.cpu_scheduler_mask");
+    run_command("/bin/sysctl.elf", "kernel.cpu_parked_mask");
     run_command("/bin/sysctl.elf", "kernel.boot_mode");
     run_command("/bin/sysctl.elf", "kernel.boot_flags");
     run_command("/bin/sysctl.elf", "kernel.boot_options");
