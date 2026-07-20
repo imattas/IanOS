@@ -928,6 +928,18 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_char(out, capacity, cursor, '\n');
         break;
     }
+    case VirtualFileKind::ProcDiskstats: {
+        const auto block_stats = hk::block::boot_disk().stats();
+        append_text(out, capacity, cursor, "8 0 bootdisk ");
+        append_decimal(out, capacity, cursor, block_stats.sector_reads);
+        append_char(out, capacity, cursor, ' ');
+        append_decimal(out, capacity, cursor, block_stats.multi_sector_reads);
+        append_char(out, capacity, cursor, ' ');
+        append_decimal(out, capacity, cursor, block_stats.sector_reads);
+        append_text(out, capacity, cursor, " 0 0 0 0 0 0 0 0");
+        append_char(out, capacity, cursor, '\n');
+        break;
+    }
     case VirtualFileKind::ProcPciSummary: {
         auto& pci = hk::pci::registry();
         append_text(out, capacity, cursor, "scanned_buses ");
@@ -1875,6 +1887,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/filesystems", VirtualFileKind::ProcFilesystems);
     register_virtual_file("/proc/fs/vfs", VirtualFileKind::ProcVfsStats);
     register_virtual_file("/proc/block/bootdisk", VirtualFileKind::ProcBlockBootdisk);
+    register_virtual_file("/proc/diskstats", VirtualFileKind::ProcDiskstats);
     register_virtual_file("/proc/driver/summary", VirtualFileKind::ProcDriverSummary);
     register_virtual_file("/proc/driver/devices", VirtualFileKind::ProcDriverDevices);
     register_virtual_file("/proc/pci/summary", VirtualFileKind::ProcPciSummary);
@@ -2650,6 +2663,7 @@ bool self_test() {
     if (!proc_cpuinfo || proc_cpuinfo->type != NodeType::MemoryFile || proc_cpuinfo->size < 16) return false;
     const Node* proc_block = vfs().find("/proc/block");
     const Node* proc_block_bootdisk = vfs().find("/proc/block/bootdisk");
+    const Node* proc_diskstats = vfs().find("/proc/diskstats");
     const Node* proc_driver = vfs().find("/proc/driver");
     const Node* proc_driver_summary = vfs().find("/proc/driver/summary");
     const Node* proc_driver_devices = vfs().find("/proc/driver/devices");
@@ -2719,6 +2733,7 @@ bool self_test() {
         !proc_filesystems || proc_filesystems->type != NodeType::VirtualFile || proc_filesystems->virtual_kind != VirtualFileKind::ProcFilesystems ||
         !proc_vfs || proc_vfs->type != NodeType::VirtualFile || proc_vfs->virtual_kind != VirtualFileKind::ProcVfsStats ||
         !proc_block_bootdisk || proc_block_bootdisk->type != NodeType::VirtualFile || proc_block_bootdisk->virtual_kind != VirtualFileKind::ProcBlockBootdisk ||
+        !proc_diskstats || proc_diskstats->type != NodeType::VirtualFile || proc_diskstats->virtual_kind != VirtualFileKind::ProcDiskstats ||
         !proc_driver_summary || proc_driver_summary->type != NodeType::VirtualFile || proc_driver_summary->virtual_kind != VirtualFileKind::ProcDriverSummary ||
         !proc_driver_devices || proc_driver_devices->type != NodeType::VirtualFile || proc_driver_devices->virtual_kind != VirtualFileKind::ProcDriverDevices ||
         !proc_pci_summary || proc_pci_summary->type != NodeType::VirtualFile || proc_pci_summary->virtual_kind != VirtualFileKind::ProcPciSummary ||
@@ -2762,6 +2777,8 @@ bool self_test() {
     if (vfs().read("/proc/fs/vfs", 0, proc_buffer, 8) != 8 || proc_buffer[0] != 'r' || proc_buffer[4] != 'f') return false;
     if (vfs().read("/proc/block/bootdisk", 0, proc_buffer, 11) != 11 ||
         proc_buffer[0] != 'i' || proc_buffer[10] != 'd') return false;
+    if (vfs().read("/proc/diskstats", 0, proc_buffer, 12) != 12 ||
+        proc_buffer[0] != '8' || proc_buffer[4] != 'b' || proc_buffer[11] != 'k') return false;
     if (vfs().read("/proc/driver/summary", 0, proc_buffer, 10) != 10 ||
         proc_buffer[0] != 'r' || proc_buffer[9] != 'd') return false;
     if (vfs().read("/proc/driver/devices", 0, proc_buffer, 6) != 6 ||
