@@ -466,7 +466,7 @@ const char* history_at(uint64_t view) {
 
 void command_help(const char*) {
     shell_line("", "commands: help clear history exit echo status pid ids fgpgid ctx argv env export unset which stat counts spawn jobs fg bg stop usched nextuser uyielddemo upreemptdemo run kill wait reap pwd cd ls cat sh fds ps mem cpus devices fb ticks");
-    shell_line("", "external: hello args cat ls uname hostname free uptime date cal dmesg kmsg loadavg ps pwd env printenv sysinfo fastfetch sysctl id ids groups ctx echo sleep true false touch append rm cp mv dd wc grep tee mkdir rmdir err stat statfs file lsattr namei tree whoami basename dirname head tail test sort uniq find hexdump readelf sha256sum sha224sum sha512sum sha384sum sha1sum md5sum cmp cksum fold printf strings nl tr sed cut paste rev tac seq expr xargs yes od base64 which sh duptest fds lsof fdinh ln readlink realpath truncate blk mount df du lsblk findmnt iostat diskstats partitions lsmem iomem bootinfo fbset lspci lsdev irqstat mmstat buddyinfo heapinfo procvmstat netstat route ip ifconfig ethtool lsdrv lsmod pipeinfo kill killall pgrep pidof nproc lscpu cpuinfo schedstat scheddebug vmstat top pstree uyield ubusy slowcat burst loop devio tty stty ttyread clear");
+    shell_line("", "external: hello args cat ls uname hostname free uptime date rtc cal dmesg kmsg loadavg ps pwd env printenv sysinfo fastfetch sysctl id ids groups ctx echo sleep true false touch append rm cp mv dd wc grep tee mkdir rmdir err stat statfs file lsattr namei tree whoami basename dirname head tail test sort uniq find hexdump readelf sha256sum sha224sum sha512sum sha384sum sha1sum md5sum cmp cksum fold printf strings nl tr sed cut paste rev tac seq expr xargs yes od base64 which sh duptest fds lsof fdinh ln readlink realpath truncate blk mount df du lsblk findmnt iostat diskstats partitions lsmem iomem bootinfo fbset lspci lsdev irqstat mmstat buddyinfo heapinfo procvmstat netstat route ip ifconfig ethtool lsdrv lsmod pipeinfo kill killall pgrep pidof nproc lscpu cpuinfo schedstat scheddebug vmstat top pstree uyield ubusy slowcat burst loop devio tty stty ttyread clear");
     shell_line("", "editing: arrows history home end delete tab pageup/pagedown scrollback ctrl-c ctrl-z jobs %n %+ wait -n");
 }
 
@@ -1646,7 +1646,7 @@ const ShellCommand kCommands[] = {
 };
 
 const char* const kExternalCommands[] = {
-    "hello", "args", "cat", "ls", "uname", "hostname", "free", "uptime", "date", "cal", "dmesg", "kmsg", "loadavg", "ps", "pwd", "env",
+    "hello", "args", "cat", "ls", "uname", "hostname", "free", "uptime", "date", "rtc", "cal", "dmesg", "kmsg", "loadavg", "ps", "pwd", "env",
     "sysinfo", "fastfetch", "sysctl", "id", "ids", "groups", "ctx", "echo", "sleep", "true", "false", "touch", "append", "rm", "cp", "mv", "dd", "wc", "grep", "tee", "mkdir", "rmdir", "err", "printenv",
     "stat", "statfs", "file", "lsattr", "namei", "tree", "whoami", "basename", "dirname", "head", "tail", "test", "sort", "uniq", "find", "hexdump", "readelf", "sha256sum", "sha224sum", "sha512sum", "sha384sum", "sha1sum", "md5sum", "cmp", "cksum", "fold", "printf", "strings", "nl", "tr", "sed", "cut", "paste", "rev", "tac", "seq", "expr", "xargs", "yes", "od", "base64", "which", "sh", "duptest", "fds", "lsof", "fdinh", "ln", "readlink", "realpath", "truncate", "blk", "mount", "df", "du", "lsblk", "findmnt", "iostat", "diskstats", "partitions", "lsmem", "iomem", "bootinfo", "fbset", "lspci", "lsdev", "irqstat", "mmstat", "buddyinfo", "heapinfo", "procvmstat", "netstat", "route", "ip", "ifconfig", "ethtool", "lsdrv", "lsmod", "pipeinfo", "kill", "killall", "pgrep", "pidof", "nproc", "lscpu", "cpuinfo", "schedstat", "scheddebug", "vmstat", "top", "pstree", "uyield", "ubusy", "slowcat", "burst", "loop", "devio", "tty", "stty", "ttyread", "clear",
 };
@@ -2358,6 +2358,7 @@ void run_boot_shell_script() {
     run_command("stat", "/dev/console");
     run_command("stat", "/proc/meminfo");
     run_command("stat", "/proc/iomem");
+    run_command("stat", "/proc/rtc");
     run_command("stat", "/proc/stat");
     run_command("stat", "/proc/loadavg");
     run_command("stat", "/proc/sched_debug");
@@ -2507,6 +2508,7 @@ void run_boot_shell_script() {
     run_command("/bin/cat.elf", "/proc/version");
     run_command("/bin/cat.elf", "/proc/meminfo");
     run_command("/bin/cat.elf", "/proc/iomem");
+    run_command("/bin/cat.elf", "/proc/rtc");
     run_command("/bin/cat.elf", "/proc/uptime");
     run_command("/bin/cat.elf", "/proc/loadavg");
     run_command("/bin/cat.elf", "/proc/sched_debug");
@@ -2609,6 +2611,7 @@ void run_boot_shell_script() {
     run_command("free");
     run_command("uptime");
     run_command("date");
+    run_command("rtc");
     run_command("/bin/cal.elf", "7 2026");
     run_command("dmesg");
     run_command("/bin/kmsg.elf");

@@ -20,6 +20,7 @@
 #include "hk/smp/smp.hpp"
 #include "hk/terminal.hpp"
 #include "hk/timer/pit.hpp"
+#include "hk/time/rtc.hpp"
 #include "hk/userspace/userspace.hpp"
 #include "hybrid/version.hpp"
 
@@ -158,6 +159,17 @@ void append_hex_fixed(char* buffer, uint64_t capacity, uint64_t& cursor, uint64_
 void append_hex(char* buffer, uint64_t capacity, uint64_t& cursor, uint64_t value) {
     append_text(buffer, capacity, cursor, "0x");
     append_hex_fixed(buffer, capacity, cursor, value, 16);
+}
+
+void append_decimal_padded(char* buffer, uint64_t capacity, uint64_t& cursor, uint64_t value, uint64_t width) {
+    char digits[20];
+    uint64_t count = 0;
+    do {
+        digits[count++] = static_cast<char>('0' + (value % 10));
+        value /= 10;
+    } while (value != 0 && count < sizeof(digits));
+    while (count < width && count < sizeof(digits)) digits[count++] = '0';
+    while (count != 0) append_char(buffer, capacity, cursor, digits[--count]);
 }
 
 void append_iomem_range(char* out, uint64_t capacity, uint64_t& cursor, uint64_t base, uint64_t length, const char* label) {
@@ -703,6 +715,44 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
                 append_char(out, capacity, cursor, '\n');
             }
         }
+        break;
+    }
+    case VirtualFileKind::ProcRtc: {
+        hybrid::DateTimeInfo dt{};
+        const bool valid = hk::time::read_rtc_datetime(dt);
+        append_text(out, capacity, cursor, "rtc_time ");
+        if (valid) {
+            append_decimal_padded(out, capacity, cursor, dt.year, 4);
+            append_char(out, capacity, cursor, '-');
+            append_decimal_padded(out, capacity, cursor, dt.month, 2);
+            append_char(out, capacity, cursor, '-');
+            append_decimal_padded(out, capacity, cursor, dt.day, 2);
+            append_char(out, capacity, cursor, ' ');
+            append_decimal_padded(out, capacity, cursor, dt.hour, 2);
+            append_char(out, capacity, cursor, ':');
+            append_decimal_padded(out, capacity, cursor, dt.minute, 2);
+            append_char(out, capacity, cursor, ':');
+            append_decimal_padded(out, capacity, cursor, dt.second, 2);
+        } else {
+            append_text(out, capacity, cursor, "invalid");
+        }
+        append_text(out, capacity, cursor, "\nvalid ");
+        append_decimal(out, capacity, cursor, valid ? 1 : 0);
+        append_text(out, capacity, cursor, "\nyear ");
+        append_decimal(out, capacity, cursor, valid ? dt.year : 0);
+        append_text(out, capacity, cursor, "\nmonth ");
+        append_decimal(out, capacity, cursor, valid ? dt.month : 0);
+        append_text(out, capacity, cursor, "\nday ");
+        append_decimal(out, capacity, cursor, valid ? dt.day : 0);
+        append_text(out, capacity, cursor, "\nhour ");
+        append_decimal(out, capacity, cursor, valid ? dt.hour : 0);
+        append_text(out, capacity, cursor, "\nminute ");
+        append_decimal(out, capacity, cursor, valid ? dt.minute : 0);
+        append_text(out, capacity, cursor, "\nsecond ");
+        append_decimal(out, capacity, cursor, valid ? dt.second : 0);
+        append_text(out, capacity, cursor, "\nticks ");
+        append_decimal(out, capacity, cursor, hk::timer::ticks());
+        append_text(out, capacity, cursor, "\nsource cmos\n");
         break;
     }
     case VirtualFileKind::ProcUptime:
@@ -1993,6 +2043,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/cpuinfo", VirtualFileKind::ProcCpuinfo);
     register_virtual_file("/proc/meminfo", VirtualFileKind::ProcMeminfo);
     register_virtual_file("/proc/iomem", VirtualFileKind::ProcIomem);
+    register_virtual_file("/proc/rtc", VirtualFileKind::ProcRtc);
     register_virtual_file("/proc/uptime", VirtualFileKind::ProcUptime);
     register_virtual_file("/proc/loadavg", VirtualFileKind::ProcLoadavg);
     register_virtual_file("/proc/sched_debug", VirtualFileKind::ProcSchedDebug);
@@ -2810,6 +2861,7 @@ bool self_test() {
     const Node* proc_self = vfs().find("/proc/self");
     const Node* proc_meminfo = vfs().find("/proc/meminfo");
     const Node* proc_iomem = vfs().find("/proc/iomem");
+    const Node* proc_rtc = vfs().find("/proc/rtc");
     const Node* proc_uptime = vfs().find("/proc/uptime");
     const Node* proc_loadavg = vfs().find("/proc/loadavg");
     const Node* proc_sched_debug = vfs().find("/proc/sched_debug");
@@ -2844,6 +2896,7 @@ bool self_test() {
         !proc_sys_kernel || proc_sys_kernel->type != NodeType::Directory) return false;
     if (!proc_meminfo || proc_meminfo->type != NodeType::VirtualFile || proc_meminfo->virtual_kind != VirtualFileKind::ProcMeminfo ||
         !proc_iomem || proc_iomem->type != NodeType::VirtualFile || proc_iomem->virtual_kind != VirtualFileKind::ProcIomem ||
+        !proc_rtc || proc_rtc->type != NodeType::VirtualFile || proc_rtc->virtual_kind != VirtualFileKind::ProcRtc ||
         !proc_uptime || proc_uptime->type != NodeType::VirtualFile || proc_uptime->virtual_kind != VirtualFileKind::ProcUptime ||
         !proc_loadavg || proc_loadavg->type != NodeType::VirtualFile || proc_loadavg->virtual_kind != VirtualFileKind::ProcLoadavg ||
         !proc_sched_debug || proc_sched_debug->type != NodeType::VirtualFile || proc_sched_debug->virtual_kind != VirtualFileKind::ProcSchedDebug ||
@@ -2887,6 +2940,7 @@ bool self_test() {
     char proc_buffer[32];
     if (vfs().read("/proc/meminfo", 0, proc_buffer, 9) != 9 || proc_buffer[0] != 'M' || proc_buffer[3] != 'T') return false;
     if (vfs().read("/proc/iomem", 0, proc_buffer, 17) != 17 || proc_buffer[4] != '0' || proc_buffer[16] != '-') return false;
+    if (vfs().read("/proc/rtc", 0, proc_buffer, 9) != 9 || proc_buffer[0] != 'r' || proc_buffer[8] != ' ') return false;
     uint32_t proc_handle = vfs().open("/proc/uptime");
     if (proc_handle == 0) return false;
     char uptime_buffer[8];

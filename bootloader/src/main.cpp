@@ -32,6 +32,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\free.elf", "/bin/free.elf"},
     {L"\\bin\\uptime.elf", "/bin/uptime.elf"},
     {L"\\bin\\date.elf", "/bin/date.elf"},
+    {L"\\bin\\rtc.elf", "/bin/rtc.elf"},
     {L"\\bin\\cal.elf", "/bin/cal.elf"},
     {L"\\bin\\dmesg.elf", "/bin/dmesg.elf"},
     {L"\\bin\\kmsg.elf", "/bin/kmsg.elf"},
