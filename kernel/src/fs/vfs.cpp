@@ -6,6 +6,7 @@
 #include "hk/cpu/runtime.hpp"
 #include "hk/cpu/topology.hpp"
 #include "hk/drivers/ahci.hpp"
+#include "hk/drivers/device_inventory.hpp"
 #include "hk/drivers/driver_manager.hpp"
 #include "hk/drivers/e1000.hpp"
 #include "hk/interrupts/irq.hpp"
@@ -214,6 +215,15 @@ const char* driver_device_state_name(hk::drivers::DeviceState state) {
     }
 }
 
+const char* inventory_class_name(hk::drivers::DeviceClass value) {
+    switch (value) {
+    case hk::drivers::DeviceClass::Storage: return "storage";
+    case hk::drivers::DeviceClass::Network: return "network";
+    case hk::drivers::DeviceClass::Display: return "display";
+    default: return "unknown";
+    }
+}
+
 const char* link_state_name(bool up) {
     return up ? "up" : "down";
 }
@@ -380,6 +390,28 @@ void append_driver_device_line(char* out, uint64_t capacity, uint64_t& cursor, c
     append_decimal(out, capacity, cursor, device.bus_master_required ? 1 : 0);
     append_text(out, capacity, cursor, " state ");
     append_text(out, capacity, cursor, driver_device_state_name(device.state));
+    append_char(out, capacity, cursor, '\n');
+}
+
+void append_proc_device_inventory_line(char* out, uint64_t capacity, uint64_t& cursor, uint32_t major, const hk::drivers::DeviceInventoryEntry& device) {
+    append_text(out, capacity, cursor, " ");
+    append_decimal(out, capacity, cursor, major);
+    append_text(out, capacity, cursor, " ");
+    append_text(out, capacity, cursor, device.driver_name ? device.driver_name : "unknown");
+    append_text(out, capacity, cursor, " class ");
+    append_text(out, capacity, cursor, inventory_class_name(device.device_class));
+    append_text(out, capacity, cursor, " bdf ");
+    append_decimal(out, capacity, cursor, device.bus);
+    append_char(out, capacity, cursor, ':');
+    append_decimal(out, capacity, cursor, device.device);
+    append_char(out, capacity, cursor, '.');
+    append_decimal(out, capacity, cursor, device.function);
+    append_text(out, capacity, cursor, " vendor ");
+    append_hex(out, capacity, cursor, device.vendor_id);
+    append_text(out, capacity, cursor, " device ");
+    append_hex(out, capacity, cursor, device.device_id);
+    append_text(out, capacity, cursor, " resources ");
+    append_decimal(out, capacity, cursor, device.resource_count);
     append_char(out, capacity, cursor, '\n');
 }
 
@@ -1106,6 +1138,29 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         append_text(out, capacity, cursor, "BDF VENDOR DEVICE CLASS SUBCLASS PROGIF COMMAND STATUS DRIVER BARS\n");
         const hk::pci::Device* devices = pci.devices();
         for (uint32_t i = 0; i < pci.count(); ++i) append_pci_device_line(out, capacity, cursor, devices[i]);
+        break;
+    }
+    case VirtualFileKind::ProcDevices: {
+        auto& inventory = hk::drivers::inventory();
+        append_text(out, capacity, cursor, "Character devices\n");
+        append_text(out, capacity, cursor, " 1 mem\n");
+        append_text(out, capacity, cursor, " 4 tty\n");
+        append_text(out, capacity, cursor, "\nBlock devices\n");
+        append_text(out, capacity, cursor, " 8 bootdisk\n");
+        append_text(out, capacity, cursor, "\nDevice inventory\n");
+        append_text(out, capacity, cursor, " storage ");
+        append_decimal(out, capacity, cursor, inventory.storage_count());
+        append_text(out, capacity, cursor, "\n network ");
+        append_decimal(out, capacity, cursor, inventory.network_count());
+        append_text(out, capacity, cursor, "\n display ");
+        append_decimal(out, capacity, cursor, inventory.display_count());
+        append_text(out, capacity, cursor, "\n resources ");
+        append_decimal(out, capacity, cursor, inventory.resource_count());
+        append_char(out, capacity, cursor, '\n');
+        const auto* entries = inventory.entries();
+        for (uint32_t i = 0; i < inventory.count(); ++i) {
+            append_proc_device_inventory_line(out, capacity, cursor, 240 + i, entries[i]);
+        }
         break;
     }
     case VirtualFileKind::ProcDriverSummary: {
@@ -2056,6 +2111,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/block/bootdisk", VirtualFileKind::ProcBlockBootdisk);
     register_virtual_file("/proc/diskstats", VirtualFileKind::ProcDiskstats);
     register_virtual_file("/proc/partitions", VirtualFileKind::ProcPartitions);
+    register_virtual_file("/proc/devices", VirtualFileKind::ProcDevices);
     register_virtual_file("/proc/driver/summary", VirtualFileKind::ProcDriverSummary);
     register_virtual_file("/proc/driver/devices", VirtualFileKind::ProcDriverDevices);
     register_virtual_file("/proc/pci/summary", VirtualFileKind::ProcPciSummary);
@@ -2833,6 +2889,7 @@ bool self_test() {
     const Node* proc_block_bootdisk = vfs().find("/proc/block/bootdisk");
     const Node* proc_diskstats = vfs().find("/proc/diskstats");
     const Node* proc_partitions = vfs().find("/proc/partitions");
+    const Node* proc_devices = vfs().find("/proc/devices");
     const Node* proc_driver = vfs().find("/proc/driver");
     const Node* proc_driver_summary = vfs().find("/proc/driver/summary");
     const Node* proc_driver_devices = vfs().find("/proc/driver/devices");
@@ -2909,6 +2966,7 @@ bool self_test() {
         !proc_block_bootdisk || proc_block_bootdisk->type != NodeType::VirtualFile || proc_block_bootdisk->virtual_kind != VirtualFileKind::ProcBlockBootdisk ||
         !proc_diskstats || proc_diskstats->type != NodeType::VirtualFile || proc_diskstats->virtual_kind != VirtualFileKind::ProcDiskstats ||
         !proc_partitions || proc_partitions->type != NodeType::VirtualFile || proc_partitions->virtual_kind != VirtualFileKind::ProcPartitions ||
+        !proc_devices || proc_devices->type != NodeType::VirtualFile || proc_devices->virtual_kind != VirtualFileKind::ProcDevices ||
         !proc_driver_summary || proc_driver_summary->type != NodeType::VirtualFile || proc_driver_summary->virtual_kind != VirtualFileKind::ProcDriverSummary ||
         !proc_driver_devices || proc_driver_devices->type != NodeType::VirtualFile || proc_driver_devices->virtual_kind != VirtualFileKind::ProcDriverDevices ||
         !proc_pci_summary || proc_pci_summary->type != NodeType::VirtualFile || proc_pci_summary->virtual_kind != VirtualFileKind::ProcPciSummary ||
@@ -2961,6 +3019,8 @@ bool self_test() {
         proc_buffer[0] != '8' || proc_buffer[4] != 'b' || proc_buffer[11] != 'k') return false;
     if (vfs().read("/proc/partitions", 0, proc_buffer, 11) != 11 ||
         proc_buffer[0] != 'm' || proc_buffer[6] != 'm' || proc_buffer[10] != 'r') return false;
+    if (vfs().read("/proc/devices", 0, proc_buffer, 10) != 10 ||
+        proc_buffer[0] != 'C' || proc_buffer[9] != ' ') return false;
     if (vfs().read("/proc/driver/summary", 0, proc_buffer, 10) != 10 ||
         proc_buffer[0] != 'r' || proc_buffer[9] != 'd') return false;
     if (vfs().read("/proc/driver/devices", 0, proc_buffer, 6) != 6 ||

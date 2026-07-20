@@ -28,6 +28,7 @@ enum class VirtualFileKind : uint8_t {
     ProcPartitions,
     ProcPciSummary,
     ProcPciDevices,
+    ProcDevices,
     ProcDriverSummary,
     ProcDriverDevices,
     ProcIrqSummary,
