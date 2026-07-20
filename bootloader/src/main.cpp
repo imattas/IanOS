@@ -156,6 +156,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\pmap.elf", "/bin/pmap.elf"},
     {L"\\bin\\maps.elf", "/bin/maps.elf"},
     {L"\\bin\\pcmdline.elf", "/bin/pcmdline.elf"},
+    {L"\\bin\\proccomm.elf", "/bin/proccomm.elf"},
     {L"\\bin\\procenv.elf", "/bin/procenv.elf"},
     {L"\\bin\\procwd.elf", "/bin/procwd.elf"},
     {L"\\bin\\procexe.elf", "/bin/procexe.elf"},

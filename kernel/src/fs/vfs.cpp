@@ -662,6 +662,7 @@ enum class DynamicProcKind : uint8_t {
     PidStat,
     PidMaps,
     PidCmdline,
+    PidComm,
     PidEnviron,
     PidCwd,
     PidExe,
@@ -728,6 +729,7 @@ DynamicProcKind parse_dynamic_proc_path(const char* normalized, uint64_t& pid, u
     if (text_equal(normalized + cursor, "stat")) return DynamicProcKind::PidStat;
     if (text_equal(normalized + cursor, "maps")) return DynamicProcKind::PidMaps;
     if (text_equal(normalized + cursor, "cmdline")) return DynamicProcKind::PidCmdline;
+    if (text_equal(normalized + cursor, "comm")) return DynamicProcKind::PidComm;
     if (text_equal(normalized + cursor, "environ")) return DynamicProcKind::PidEnviron;
     if (text_equal(normalized + cursor, "cwd")) return DynamicProcKind::PidCwd;
     if (text_equal(normalized + cursor, "exe")) return DynamicProcKind::PidExe;
@@ -904,6 +906,15 @@ void render_proc_cmdline(uint64_t pid, char* out, uint64_t capacity) {
     append_char(out, capacity, cursor, '\n');
 }
 
+void render_proc_comm(uint64_t pid, char* out, uint64_t capacity) {
+    uint64_t cursor = 0;
+    out[0] = 0;
+    hybrid::ProcessInfo process{};
+    if (!process_info_by_pid(pid, process)) return;
+    append_text(out, capacity, cursor, process.name);
+    append_char(out, capacity, cursor, '\n');
+}
+
 void render_proc_environ(uint64_t pid, char* out, uint64_t capacity) {
     uint64_t cursor = 0;
     out[0] = 0;
@@ -1055,6 +1066,12 @@ uint64_t render_dynamic_proc_file(const char* normalized, char* out, uint64_t ca
     }
     if (kind == DynamicProcKind::PidCmdline) {
         render_proc_cmdline(pid, out, capacity);
+        uint64_t length = 0;
+        while (length < capacity && out[length] != 0) ++length;
+        return length;
+    }
+    if (kind == DynamicProcKind::PidComm) {
+        render_proc_comm(pid, out, capacity);
         uint64_t length = 0;
         while (length < capacity && out[length] != 0) ++length;
         return length;
@@ -1426,6 +1443,17 @@ uint64_t render_virtual_file(VirtualFileKind kind, char* out, uint64_t capacity)
         uint64_t pid = hk::userspace::userspace_manager().current_pid();
         if (pid != 0) {
             render_proc_cmdline(pid, out, capacity);
+            cursor = 0;
+            while (cursor < capacity && out[cursor] != 0) ++cursor;
+        } else {
+            append_text(out, capacity, cursor, "kernel\n");
+        }
+        break;
+    }
+    case VirtualFileKind::ProcSelfComm: {
+        uint64_t pid = hk::userspace::userspace_manager().current_pid();
+        if (pid != 0) {
+            render_proc_comm(pid, out, capacity);
             cursor = 0;
             while (cursor < capacity && out[cursor] != 0) ++cursor;
         } else {
@@ -2759,6 +2787,7 @@ void Vfs::initialize(const hybrid::BootInfo& boot) {
     register_virtual_file("/proc/self/stat", VirtualFileKind::ProcSelfStat);
     register_virtual_file("/proc/self/maps", VirtualFileKind::ProcSelfMaps);
     register_virtual_file("/proc/self/cmdline", VirtualFileKind::ProcSelfCmdline);
+    register_virtual_file("/proc/self/comm", VirtualFileKind::ProcSelfComm);
     register_virtual_file("/proc/self/environ", VirtualFileKind::ProcSelfEnviron);
     register_virtual_file("/proc/self/cwd", VirtualFileKind::ProcSelfCwd);
     register_virtual_file("/proc/self/exe", VirtualFileKind::ProcSelfExe);
@@ -3396,11 +3425,11 @@ bool Vfs::copy_directory_entry(const char* path, uint32_t index, hybrid::VfsDire
         }
     }
     if (proc_kind == DynamicProcKind::PidDirectory) {
-        const char* names[] = {"status", "stat", "maps", "cmdline", "environ", "cwd", "exe", "root", "limits", "fd", "fdinfo"};
-        if (index >= 11) return false;
+        const char* names[] = {"status", "stat", "maps", "cmdline", "comm", "environ", "cwd", "exe", "root", "limits", "fd", "fdinfo"};
+        if (index >= 12) return false;
         char entry_path[64]{};
         copy_proc_pid_path(entry_path, proc_pid, names[index]);
-        const bool is_directory = index == 9 || index == 10;
+        const bool is_directory = index == 10 || index == 11;
         out.type = is_directory ? hybrid::VfsNodeType::Directory : hybrid::VfsNodeType::VirtualFile;
         out.flags = is_directory ? hybrid::VfsNodeDirectory : (hybrid::VfsNodeReadable | hybrid::VfsNodeVirtual);
         out.size = dynamic_proc_file_size(entry_path);
@@ -3511,6 +3540,7 @@ bool Vfs::stat(const char* path, hybrid::VfsStatInfo& out) const {
         }
         if (proc_kind == DynamicProcKind::PidStatus || proc_kind == DynamicProcKind::PidStat ||
             proc_kind == DynamicProcKind::PidMaps || proc_kind == DynamicProcKind::PidCmdline ||
+            proc_kind == DynamicProcKind::PidComm ||
             proc_kind == DynamicProcKind::PidEnviron ||
             proc_kind == DynamicProcKind::PidCwd ||
             proc_kind == DynamicProcKind::PidExe ||
@@ -3614,6 +3644,7 @@ bool self_test() {
     const Node* proc_self_stat = vfs().find("/proc/self/stat");
     const Node* proc_self_maps = vfs().find("/proc/self/maps");
     const Node* proc_self_cmdline = vfs().find("/proc/self/cmdline");
+    const Node* proc_self_comm = vfs().find("/proc/self/comm");
     const Node* proc_self_environ = vfs().find("/proc/self/environ");
     const Node* proc_self_cwd = vfs().find("/proc/self/cwd");
     const Node* proc_self_exe = vfs().find("/proc/self/exe");
@@ -3681,6 +3712,7 @@ bool self_test() {
         !proc_self_stat || proc_self_stat->type != NodeType::VirtualFile || proc_self_stat->virtual_kind != VirtualFileKind::ProcSelfStat ||
         !proc_self_maps || proc_self_maps->type != NodeType::VirtualFile || proc_self_maps->virtual_kind != VirtualFileKind::ProcSelfMaps ||
         !proc_self_cmdline || proc_self_cmdline->type != NodeType::VirtualFile || proc_self_cmdline->virtual_kind != VirtualFileKind::ProcSelfCmdline ||
+        !proc_self_comm || proc_self_comm->type != NodeType::VirtualFile || proc_self_comm->virtual_kind != VirtualFileKind::ProcSelfComm ||
         !proc_self_environ || proc_self_environ->type != NodeType::VirtualFile || proc_self_environ->virtual_kind != VirtualFileKind::ProcSelfEnviron ||
         !proc_self_cwd || proc_self_cwd->type != NodeType::VirtualFile || proc_self_cwd->virtual_kind != VirtualFileKind::ProcSelfCwd ||
         !proc_self_exe || proc_self_exe->type != NodeType::VirtualFile || proc_self_exe->virtual_kind != VirtualFileKind::ProcSelfExe ||

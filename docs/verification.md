@@ -67,7 +67,7 @@ The verifier performs the following gates:
   recursive directory traversal through `tree`,
   path-to-filesystem ownership through `statfs`,
   `basename`, `dirname`, option-bounded `head` and `tail`, and quiet
-  `test` predicates chained through `&&`/`||`, external `sort`/`uniq -c`/`uniq -d`/`uniq -u`/`find`/`hexdump`/`od`/`base64`/`which`/`readelf`/`file`/`sha256sum`/`sha224sum`/`sha512sum`/`sha384sum`/`sha1sum`/`md5sum`/`cksum`/`fold`/`printf`/`dd`/`xargs`/`yes`/`cmp`/`strings`/`nl`/`tr`/`sed`/`cut`/`paste`/`rev`/`tac`/`seq`/`expr`/`nproc`/`lscpu`/`schedstat`/`scheddebug`/`vmstat`/`top`/`pstree`/`findmnt`/`mountinfo`, and
+  `test` predicates chained through `&&`/`||`, external `sort`/`uniq -c`/`uniq -d`/`uniq -u`/`find`/`hexdump`/`od`/`base64`/`which`/`readelf`/`file`/`sha256sum`/`sha224sum`/`sha512sum`/`sha384sum`/`sha1sum`/`md5sum`/`cksum`/`fold`/`printf`/`dd`/`xargs`/`yes`/`cmp`/`strings`/`nl`/`tr`/`sed`/`cut`/`paste`/`rev`/`tac`/`seq`/`expr`/`nproc`/`lscpu`/`schedstat`/`scheddebug`/`vmstat`/`top`/`pstree`/`findmnt`/`mountinfo`/`proccomm`, and
   bounded `sh` script execution from a VFS file,
   process-name lookup through `pgrep` and `pidof`,
   SIGKILL and SIGTERM child termination with distinct wait statuses, shell
