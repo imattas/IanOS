@@ -72,6 +72,10 @@ struct Process {
     uint64_t process_group_id;
     uint64_t syscall_count;
     uint64_t last_syscall;
+    uint64_t read_syscalls;
+    uint64_t write_syscalls;
+    uint64_t read_bytes;
+    uint64_t write_bytes;
     uint64_t run_ticks;
     uint64_t switch_count;
     uint64_t preempt_count;

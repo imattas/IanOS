@@ -163,6 +163,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\procroot.elf", "/bin/procroot.elf"},
     {L"\\bin\\procfdinfo.elf", "/bin/procfdinfo.elf"},
     {L"\\bin\\proclimits.elf", "/bin/proclimits.elf"},
+    {L"\\bin\\procio.elf", "/bin/procio.elf"},
     {L"\\bin\\proctask.elf", "/bin/proctask.elf"},
     {L"\\bin\\version.elf", "/bin/version.elf"},
     {L"\\bin\\limits.elf", "/bin/limits.elf"},

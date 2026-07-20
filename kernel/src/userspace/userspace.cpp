@@ -380,7 +380,7 @@ Process* UserspaceManager::create_process(const char* name, uint64_t entry) {
 
     Process* process = allocate_process_slot();
     if (!process) return nullptr;
-    *process = Process{next_pid_++, 0, ProcessState::Created, name, entry, space.pml4, kDefaultUserStackTop, kDefaultUserStackPages, 0, 0, 0, 0, hybrid::ProcessTerminationReason::None, 3, {}, 0, {}, {}, 0, {}, 0, {}, {}, true, 0, 0, 0, 0, 0, 0};
+    *process = Process{next_pid_++, 0, ProcessState::Created, name, entry, space.pml4, kDefaultUserStackTop, kDefaultUserStackPages, 0, 0, 0, 0, hybrid::ProcessTerminationReason::None, 3, {}, 0, {}, {}, 0, {}, 0, {}, {}, true, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     process->process_group_id = process->pid;
     set_default_directory(*process);
     copy_owned_pages(*process, owned, owned_count);
@@ -448,7 +448,7 @@ Process* UserspaceManager::create_process_from_elf(const char* name, uint64_t im
 
     Process* process = allocate_process_slot();
     if (!process) return nullptr;
-    *process = Process{next_pid_++, 0, ProcessState::Created, name, eh->e_entry, space.pml4, kDefaultUserStackTop, kDefaultUserStackPages, first_vaddr, loaded_pages, 0, 0, hybrid::ProcessTerminationReason::None, 3, {}, 0, {}, {}, 0, {}, 0, {}, {}, true, 0, 0, 0, 0, 0, 0};
+    *process = Process{next_pid_++, 0, ProcessState::Created, name, eh->e_entry, space.pml4, kDefaultUserStackTop, kDefaultUserStackPages, first_vaddr, loaded_pages, 0, 0, hybrid::ProcessTerminationReason::None, 3, {}, 0, {}, {}, 0, {}, 0, {}, {}, true, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     process->process_group_id = process->pid;
     set_default_directory(*process);
     copy_owned_pages(*process, owned, owned_count);
@@ -461,7 +461,7 @@ Process* UserspaceManager::create_process_stub(const char* name, uint64_t entry,
     if (entry == 0) return nullptr;
     Process* process = allocate_process_slot();
     if (!process) return nullptr;
-    *process = Process{next_pid_++, 0, ProcessState::Created, name, entry, address_space_root, 0, 0, 0, 0, 0, 0, hybrid::ProcessTerminationReason::None, 3, {}, 0, {}, {}, 0, {}, 0, {}, {}, false, 0, 0, 0, 0, 0, 0};
+    *process = Process{next_pid_++, 0, ProcessState::Created, name, entry, address_space_root, 0, 0, 0, 0, 0, 0, hybrid::ProcessTerminationReason::None, 3, {}, 0, {}, {}, 0, {}, 0, {}, {}, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     process->process_group_id = process->pid;
     set_default_directory(*process);
     if (!install_default_standard_fds(*process)) return nullptr;
@@ -1402,6 +1402,8 @@ uint64_t UserspaceManager::read_file(uint64_t pid, uint32_t fd, void* buffer, ui
             if (entry.kind == FileDescriptorKind::Vfs) {
                 uint64_t bytes = hk::fs::vfs().read_handle(entry.vfs_handle, buffer, static_cast<size_t>(size));
                 sync_descriptor_offsets(*process, entry.vfs_handle, hk::fs::vfs().handle_offset(entry.vfs_handle));
+                ++process->read_syscalls;
+                process->read_bytes += bytes;
                 return bytes;
             }
             if (entry.kind == FileDescriptorKind::PipeRead) {
@@ -1418,6 +1420,8 @@ uint64_t UserspaceManager::read_file(uint64_t pid, uint32_t fd, void* buffer, ui
                     pipe->read_offset = 0;
                 }
                 wake_pipe_waiters(entry.pipe_id, false, true);
+                ++process->read_syscalls;
+                process->read_bytes += to_copy;
                 return to_copy;
             }
             return 0;
@@ -1434,6 +1438,8 @@ uint64_t UserspaceManager::write_file(uint64_t pid, uint32_t fd, const void* buf
             if (entry.kind == FileDescriptorKind::Vfs) {
                 uint64_t bytes = hk::fs::vfs().write_handle(entry.vfs_handle, buffer, static_cast<size_t>(size));
                 sync_descriptor_offsets(*process, entry.vfs_handle, hk::fs::vfs().handle_offset(entry.vfs_handle));
+                ++process->write_syscalls;
+                process->write_bytes += bytes;
                 return bytes;
             }
             if (entry.kind == FileDescriptorKind::PipeWrite) {
@@ -1445,6 +1451,8 @@ uint64_t UserspaceManager::write_file(uint64_t pid, uint32_t fd, const void* buf
                 memcpy(pipe->data + pipe->size, buffer, to_copy);
                 pipe->size += to_copy;
                 wake_pipe_waiters(entry.pipe_id, true, false);
+                ++process->write_syscalls;
+                process->write_bytes += to_copy;
                 return to_copy;
             }
             return 0;
@@ -1809,6 +1817,10 @@ bool UserspaceManager::copy_process_info(uint64_t index, hybrid::ProcessInfo& ou
     out.process_group_id = process.process_group_id;
     out.syscall_count = process.syscall_count;
     out.last_syscall = process.last_syscall;
+    out.read_syscalls = process.read_syscalls;
+    out.write_syscalls = process.write_syscalls;
+    out.read_bytes = process.read_bytes;
+    out.write_bytes = process.write_bytes;
     out.run_ticks = process.run_ticks;
     out.switch_count = process.switch_count;
     out.preempt_count = process.preempt_count;
