@@ -136,6 +136,7 @@ constexpr BootModuleSpec kBootModuleSpecs[] = {
     {L"\\bin\\lsdev.elf", "/bin/lsdev.elf"},
     {L"\\bin\\devices.elf", "/bin/devices.elf"},
     {L"\\bin\\irqstat.elf", "/bin/irqstat.elf"},
+    {L"\\bin\\interrupts.elf", "/bin/interrupts.elf"},
     {L"\\bin\\mmstat.elf", "/bin/mmstat.elf"},
     {L"\\bin\\buddyinfo.elf", "/bin/buddyinfo.elf"},
     {L"\\bin\\heapinfo.elf", "/bin/heapinfo.elf"},

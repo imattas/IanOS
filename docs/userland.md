@@ -224,7 +224,7 @@ geometry, scanline pitch, pixel size, pixel format, and color masks.
 `/bin/lspci.elf` reads the indexed device-inventory syscall and reports each
 PCI-backed storage, network, and display device with BDF, vendor/device IDs,
 required command bits, resource count, and MMIO/IO resources.
-`/bin/irqstat.elf` reads `/proc/irq/summary` and `/proc/interrupts` through the
+`/bin/irqstat.elf` reads `/proc/irq/summary` and selected `/proc/interrupts` rows through the
 VFS syscalls and reports interrupt dispatch totals, APIC vectors, syscall
 vector activity, and interrupt-table rows from userspace.
 `/bin/mmstat.elf` reads `/proc/mm/summary` through the VFS syscalls and reports
@@ -345,7 +345,7 @@ and stats/lists/reads `/mnt/boot/kernel.elf` plus nested files such as
 on the AHCI-backed disk image. The command set now includes
 filesystem manipulation programs: `touch`, `append`, `rm`, `cp`, `mv`, `ln`, `truncate`, `wc`,
 `grep`, `mkdir`, `rmdir`, `stat`, `statfs`, `whoami`, `hostname`, `id`, `basename`, `dirname`, `head`,
-`tail`, `test`, `sort`, `uniq`, `/bin/find.elf`, `/bin/hexdump.elf`, `/bin/od.elf`, `/bin/base64.elf`, `/bin/which.elf`, `/bin/printenv.elf`, `/bin/cal.elf`, `/bin/readelf.elf`, `/bin/file.elf`, `/bin/lsattr.elf`, `/bin/namei.elf`, `/bin/tree.elf`, `/bin/statfs.elf`, `/bin/sha256sum.elf`, `/bin/sha224sum.elf`, `/bin/sha512sum.elf`, `/bin/sha384sum.elf`, `/bin/sha1sum.elf`, `/bin/md5sum.elf`, `/bin/cksum.elf`, `/bin/fold.elf`, `/bin/printf.elf`, `/bin/dd.elf`, `/bin/xargs.elf`, `/bin/yes.elf`, `/bin/cmp.elf`, `/bin/strings.elf`, `/bin/nl.elf`, `/bin/tr.elf`, `/bin/sed.elf`, `/bin/cut.elf`, `/bin/paste.elf`, `/bin/rev.elf`, `/bin/tac.elf`, `/bin/seq.elf`, `/bin/expr.elf`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/realpath.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/findmnt.elf`, `/bin/iostat.elf`, `/bin/lsmem.elf`, `/bin/iomem.elf`, `/bin/fbset.elf`, `/bin/lspci.elf`, `/bin/irqstat.elf`, `/bin/mmstat.elf`, `/bin/buddyinfo.elf`, `/bin/heapinfo.elf`, `/bin/procvmstat.elf`, `/bin/netstat.elf`, `/bin/lsmod.elf`, `/bin/kmsg.elf`, `/bin/loadavg.elf`, `/bin/scheddebug.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/pidof.elf`, `/bin/nproc.elf`, `/bin/lscpu.elf`, `/bin/schedstat.elf`, `/bin/vmstat.elf`, `/bin/top.elf`, `/bin/pstree.elf`, `/bin/groups.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
+`tail`, `test`, `sort`, `uniq`, `/bin/find.elf`, `/bin/hexdump.elf`, `/bin/od.elf`, `/bin/base64.elf`, `/bin/which.elf`, `/bin/printenv.elf`, `/bin/cal.elf`, `/bin/readelf.elf`, `/bin/file.elf`, `/bin/lsattr.elf`, `/bin/namei.elf`, `/bin/tree.elf`, `/bin/statfs.elf`, `/bin/sha256sum.elf`, `/bin/sha224sum.elf`, `/bin/sha512sum.elf`, `/bin/sha384sum.elf`, `/bin/sha1sum.elf`, `/bin/md5sum.elf`, `/bin/cksum.elf`, `/bin/fold.elf`, `/bin/printf.elf`, `/bin/dd.elf`, `/bin/xargs.elf`, `/bin/yes.elf`, `/bin/cmp.elf`, `/bin/strings.elf`, `/bin/nl.elf`, `/bin/tr.elf`, `/bin/sed.elf`, `/bin/cut.elf`, `/bin/paste.elf`, `/bin/rev.elf`, `/bin/tac.elf`, `/bin/seq.elf`, `/bin/expr.elf`, `/bin/sh.elf`, `/bin/duptest.elf`, `/bin/fds.elf`, `/bin/lsof.elf`, `/bin/fdinh.elf`, `/bin/ln.elf`, `/bin/readlink.elf`, `/bin/realpath.elf`, `/bin/truncate.elf`, `/bin/pipeinfo.elf`, `/bin/fastfetch.elf`, `/bin/sysctl.elf`, `/bin/lsblk.elf`, `/bin/findmnt.elf`, `/bin/iostat.elf`, `/bin/lsmem.elf`, `/bin/iomem.elf`, `/bin/fbset.elf`, `/bin/lspci.elf`, `/bin/irqstat.elf`, `/bin/interrupts.elf`, `/bin/mmstat.elf`, `/bin/buddyinfo.elf`, `/bin/heapinfo.elf`, `/bin/procvmstat.elf`, `/bin/netstat.elf`, `/bin/lsmod.elf`, `/bin/kmsg.elf`, `/bin/loadavg.elf`, `/bin/scheddebug.elf`, `/bin/devio.elf`, `/bin/tty.elf`, `/bin/stty.elf`, `/bin/ttyread.elf`, `/bin/clear.elf`, `/bin/kill.elf`, `/bin/pgrep.elf`, `/bin/pidof.elf`, `/bin/nproc.elf`, `/bin/lscpu.elf`, `/bin/schedstat.elf`, `/bin/vmstat.elf`, `/bin/top.elf`, `/bin/pstree.elf`, `/bin/groups.elf`, `/bin/killall.elf`, and a diagnostic `err` program that writes
 separately to stdout and stderr. `uniq` supports adjacent duplicate
 suppression plus `-c` count-prefix, `-d` duplicate-only, and `-u`
 unique-only modes over each emitted run. Built-in and external `stat` report normalized
@@ -447,7 +447,7 @@ lifecycle counters, `/proc/driver/devices` exposes bound driver-device rows,
 `/proc/pci/summary` exposes PCI scan and ECAM diagnostics,
 `/proc/pci/devices` exposes retained device rows, `/proc/irq/summary` exposes
 interrupt dispatch, vector, Local APIC timer, and user-preemption counters,
-`/proc/interrupts` exposes a Linux-like per-vector interrupt table, and
+`/proc/interrupts` exposes a Linux-like per-vector interrupt table, `/bin/interrupts.elf` streams it directly through VFS, and
 `/proc/tty/summary` exposes terminal input, scrollback, and framebuffer console
 counters, `/proc/net/summary` plus `/proc/net/dev` expose e1000 link and
 interface counters, and `/proc/cpu/summary` plus `/proc/cpu/topology` expose CPU startup,

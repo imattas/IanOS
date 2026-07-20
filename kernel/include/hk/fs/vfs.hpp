@@ -54,7 +54,7 @@ enum class VirtualFileKind : uint8_t {
     ProcVersionString,
 };
 
-constexpr uint32_t kMaxVfsNodes = 384;
+constexpr uint32_t kMaxVfsNodes = 512;
 constexpr uint32_t kMaxFileHandles = 32;
 constexpr uint32_t kMaxRamFiles = 32;
 constexpr uint32_t kMaxRamDirectories = 8;
