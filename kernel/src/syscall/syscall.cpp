@@ -668,6 +668,7 @@ Result dispatch(uint64_t number, uint64_t arg0, uint64_t arg1, uint64_t arg2, ui
         if (!out) return {0, kErrorInvalidPointer};
         const auto stats = hk::block::boot_disk().stats();
         out->sector_size = 512;
+        out->sector_count = stats.sector_count;
         out->sector_reads = stats.sector_reads;
         out->cache_hits = stats.cache_hits;
         out->cache_misses = stats.cache_misses;
@@ -1269,7 +1270,7 @@ bool self_test() {
     unsigned char block_sector[512]{};
     auto block_read_result = dispatch(static_cast<uint64_t>(Number::ReadBlockSector), 0, reinterpret_cast<uint64_t>(block_sector), 0, 0);
     if (block_info_result.error != kErrorNone || block_info_result.value != 1 ||
-        block_info.initialized == 0 || block_info.sector_size != 512 ||
+        block_info.initialized == 0 || block_info.sector_size != 512 || block_info.sector_count == 0 ||
         block_info.cache_fills == 0 || block_info.cached_entries == 0 ||
         block_info.backend_read_failures != 0 ||
         block_read_result.error != kErrorNone || block_read_result.value != 512 ||

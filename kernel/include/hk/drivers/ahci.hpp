@@ -33,6 +33,9 @@ struct Controller {
     uint16_t identify_signature_word;
     uint16_t identify_capabilities;
     uint16_t identify_major_version;
+    uint64_t identify_lba28_sectors;
+    uint64_t identify_lba48_sectors;
+    uint64_t identify_sector_count;
     bool read_lba0_attempted;
     bool read_lba0_success;
     uint32_t read_lba0_status;

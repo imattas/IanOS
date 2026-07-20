@@ -10,6 +10,7 @@ extern "C" [[noreturn]] void _start() {
 
     hybrid::user::write_hex_line("[blk] ", "initialized ", info.initialized);
     hybrid::user::write_hex_line("[blk] ", "sector size ", info.sector_size);
+    hybrid::user::write_hex_line("[blk] ", "sector count ", info.sector_count);
     hybrid::user::write_hex_line("[blk] ", "reads ", info.sector_reads);
     hybrid::user::write_hex_line("[blk] ", "cache hits ", info.cache_hits);
     hybrid::user::write_hex_line("[blk] ", "cache misses ", info.cache_misses);

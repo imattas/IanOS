@@ -41,7 +41,7 @@ extern "C" [[noreturn]] void _start() {
         hybrid::user::exit(1);
     }
 
-    uint64_t sectors = block.last_lba + 1;
+    uint64_t sectors = block.sector_count != 0 ? block.sector_count : block.last_lba + 1;
     uint64_t bytes = sectors * block.sector_size;
     hybrid::user::write_line("[lsblk] NAME TYPE SIZE SECTORS MOUNTPOINT");
 
@@ -56,6 +56,7 @@ extern "C" [[noreturn]] void _start() {
 
     hybrid::user::write_hex_line("[lsblk] ", "initialized ", block.initialized);
     hybrid::user::write_hex_line("[lsblk] ", "sector size ", block.sector_size);
+    hybrid::user::write_hex_line("[lsblk] ", "sector count ", block.sector_count);
     hybrid::user::write_hex_line("[lsblk] ", "last lba ", block.last_lba);
     hybrid::user::write_hex_line("[lsblk] ", "reads ", block.sector_reads);
     hybrid::user::write_hex_line("[lsblk] ", "cache hits ", block.cache_hits);

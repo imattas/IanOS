@@ -24,6 +24,7 @@ enum class VirtualFileKind : uint8_t {
     ProcVfsStats,
     ProcBlockBootdisk,
     ProcDiskstats,
+    ProcPartitions,
     ProcPciSummary,
     ProcPciDevices,
     ProcDriverSummary,

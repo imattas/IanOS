@@ -6,6 +6,7 @@ namespace hk::block {
 
 struct BlockStats {
     bool initialized;
+    uint64_t sector_count;
     uint64_t sector_reads;
     uint64_t multi_sector_reads;
     uint64_t cache_hits;

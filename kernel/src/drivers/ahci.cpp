@@ -189,6 +189,15 @@ bool issue_identify(Controller& controller) {
     controller.identify_signature_word = words[0];
     controller.identify_capabilities = words[49];
     controller.identify_major_version = words[80];
+    controller.identify_lba28_sectors = static_cast<uint64_t>(words[60]) |
+        (static_cast<uint64_t>(words[61]) << 16);
+    controller.identify_lba48_sectors = static_cast<uint64_t>(words[100]) |
+        (static_cast<uint64_t>(words[101]) << 16) |
+        (static_cast<uint64_t>(words[102]) << 32) |
+        (static_cast<uint64_t>(words[103]) << 48);
+    controller.identify_sector_count = controller.identify_lba48_sectors != 0
+        ? controller.identify_lba48_sectors
+        : controller.identify_lba28_sectors;
     controller.identify_success = controller.identify_signature_word != 0;
     return controller.identify_success;
 }
@@ -250,7 +259,7 @@ void AhciDriver::probe(const hk::pci::PciRegistry& pci) {
         controller_ = Controller{
             true, device->bus, device->device, device->function, device->vendor_id, device->device_id,
             abar->base, abar->size, 0, binding.required_command_bits, false, 0, 0, 0, 0, 0, 0, 0xffffffffu,
-            0, 0, 0, false, false, 0, 0, 0, 0, 0, false, false, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, false, false, 0, 0, 0, 0, 0, 0, 0, false, false, 0, 0, 0, 0, 0, 0, 0,
         };
         uint64_t phys = align_down(controller_.abar);
         uint64_t page_offset = controller_.abar - phys;
@@ -316,6 +325,9 @@ void AhciDriver::probe(const hk::pci::PciRegistry& pci) {
         hk::log_hex(hk::LogLevel::Info, "AHCI identify word0", controller_.identify_signature_word);
         hk::log_hex(hk::LogLevel::Info, "AHCI identify capabilities", controller_.identify_capabilities);
         hk::log_hex(hk::LogLevel::Info, "AHCI identify major version", controller_.identify_major_version);
+        hk::log_hex(hk::LogLevel::Info, "AHCI identify LBA28 sectors", controller_.identify_lba28_sectors);
+        hk::log_hex(hk::LogLevel::Info, "AHCI identify LBA48 sectors", controller_.identify_lba48_sectors);
+        hk::log_hex(hk::LogLevel::Info, "AHCI identify sector count", controller_.identify_sector_count);
     }
     hk::log_hex(hk::LogLevel::Info, "AHCI read lba0 attempted", controller_.read_lba0_attempted ? 1 : 0);
     hk::log_hex(hk::LogLevel::Info, "AHCI read lba0 success", controller_.read_lba0_success ? 1 : 0);
@@ -338,7 +350,7 @@ bool self_test() {
     if (!c.hba_mapped || c.hba_virtual == 0) return false;
     if (c.cap == 0 || c.version == 0 || c.ports_implemented == 0 || c.implemented_port_count == 0) return false;
     if (c.active_port_count != 0 && c.first_active_port >= 32) return false;
-    if (!c.identify_attempted || !c.identify_success || c.identify_signature_word == 0) return false;
+    if (!c.identify_attempted || !c.identify_success || c.identify_signature_word == 0 || c.identify_sector_count == 0) return false;
     if (!c.read_lba0_attempted || !c.read_lba0_success || c.read_lba0_boot_signature != 0xaa55) return false;
     unsigned char sector[512]{};
     if (!driver().read_sector(0, sector)) return false;

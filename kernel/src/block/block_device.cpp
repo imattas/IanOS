@@ -16,7 +16,9 @@ bool BlockDevice::initialize_ahci() {
     for (auto& entry : cache_) entry = CacheEntry{};
     const auto& controller = hk::drivers::ahci::driver().controller();
     stats_.initialized = controller.identify_success && controller.read_lba0_success;
+    stats_.sector_count = controller.identify_sector_count;
     hk::log_hex(hk::LogLevel::Info, "Block boot disk initialized", stats_.initialized ? 1 : 0);
+    hk::log_hex(hk::LogLevel::Info, "Block boot disk sectors", stats_.sector_count);
     return stats_.initialized;
 }
 
@@ -30,6 +32,10 @@ void BlockDevice::refresh_cached_entry_count() {
 
 bool BlockDevice::read_sector(uint64_t lba, void* out_512) {
     if (!stats_.initialized) {
+        ++stats_.invalid_reads;
+        return false;
+    }
+    if (stats_.sector_count != 0 && lba >= stats_.sector_count) {
         ++stats_.invalid_reads;
         return false;
     }
@@ -81,6 +87,10 @@ bool BlockDevice::read_sectors(uint64_t start_lba, uint32_t sector_count, void* 
     if (sector_count > 64) {
         ++stats_.invalid_reads;
         ++stats_.oversized_request_rejects;
+        return false;
+    }
+    if (stats_.sector_count != 0 && (start_lba >= stats_.sector_count || sector_count > stats_.sector_count - start_lba)) {
+        ++stats_.invalid_reads;
         return false;
     }
     ++stats_.multi_sector_reads;

@@ -34,6 +34,7 @@ int main_result() {
 
     hybrid::user::write_hex_line("[iostat] ", "initialized ", info.initialized);
     hybrid::user::write_hex_line("[iostat] ", "sector size ", info.sector_size);
+    hybrid::user::write_hex_line("[iostat] ", "sector count ", info.sector_count);
     hybrid::user::write_hex_line("[iostat] ", "sector reads ", info.sector_reads);
     hybrid::user::write_hex_line("[iostat] ", "read bytes ", info.sector_reads * info.sector_size);
     hybrid::user::write_hex_line("[iostat] ", "cache hits ", info.cache_hits);

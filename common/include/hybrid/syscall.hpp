@@ -185,6 +185,7 @@ struct [[gnu::packed]] MemoryStatsInfo {
 
 struct [[gnu::packed]] BlockDeviceInfo {
     uint64_t sector_size;
+    uint64_t sector_count;
     uint64_t sector_reads;
     uint64_t cache_hits;
     uint64_t cache_misses;
