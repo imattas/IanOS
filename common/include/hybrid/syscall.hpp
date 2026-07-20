@@ -100,6 +100,7 @@ enum class SyscallNumber : uint64_t {
     Rename = 94,
     ReadDirectory = 95,
     ReadLink = 96,
+    GetLimitsInfo = 97,
 };
 
 constexpr uint32_t kStdinFd = 0;
@@ -452,6 +453,29 @@ struct [[gnu::packed]] SystemInfo {
     char machine[16];
     char boot_mode[16];
     char kernel_type[32];
+};
+
+struct [[gnu::packed]] LimitsInfo {
+    uint64_t max_boot_modules;
+    uint64_t max_vfs_nodes;
+    uint64_t max_file_handles;
+    uint64_t max_ram_files;
+    uint64_t max_ram_directories;
+    uint64_t max_ram_links;
+    uint64_t max_mounts;
+    uint64_t max_ram_file_bytes;
+    uint64_t max_process_file_descriptors;
+    uint64_t max_owned_user_pages;
+    uint64_t max_process_arguments;
+    uint64_t max_argument_length;
+    uint64_t max_environment_entries;
+    uint64_t max_environment_key_length;
+    uint64_t max_environment_value_length;
+    uint64_t max_pipes;
+    uint64_t pipe_capacity;
+    uint64_t max_cpus;
+    uint64_t pmm_bitmap_pages;
+    uint64_t mounted_fat_path_capacity;
 };
 
 constexpr uint64_t kSyscallErrorNone = 0;

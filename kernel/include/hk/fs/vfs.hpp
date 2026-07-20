@@ -182,6 +182,7 @@ private:
 };
 
 Vfs& vfs();
+uint32_t mounted_fat_path_capacity();
 bool self_test();
 
 } // namespace hk::fs

@@ -714,6 +714,31 @@ Result dispatch(uint64_t number, uint64_t arg0, uint64_t arg1, uint64_t arg2, ui
         copy_text(out->kernel_type, sizeof(out->kernel_type), hybrid::version::kKernelDisplay);
         return {1, kErrorNone};
     }
+    case Number::GetLimitsInfo: {
+        auto* out = reinterpret_cast<hybrid::LimitsInfo*>(arg0);
+        if (!out || !user_buffer_writable(reinterpret_cast<char*>(out), sizeof(*out))) return {0, kErrorInvalidPointer};
+        out->max_boot_modules = hybrid::kMaxBootModules;
+        out->max_vfs_nodes = hk::fs::kMaxVfsNodes;
+        out->max_file_handles = hk::fs::kMaxFileHandles;
+        out->max_ram_files = hk::fs::kMaxRamFiles;
+        out->max_ram_directories = hk::fs::kMaxRamDirectories;
+        out->max_ram_links = hk::fs::kMaxRamLinks;
+        out->max_mounts = hk::fs::kMaxMounts;
+        out->max_ram_file_bytes = hk::fs::kMaxRamFileBytes;
+        out->max_process_file_descriptors = hk::userspace::kMaxProcessFileDescriptors;
+        out->max_owned_user_pages = hk::userspace::kMaxOwnedUserPages;
+        out->max_process_arguments = hk::userspace::kMaxProcessArguments;
+        out->max_argument_length = hk::userspace::kMaxArgumentLength;
+        out->max_environment_entries = hk::userspace::kMaxEnvironmentEntries;
+        out->max_environment_key_length = hk::userspace::kMaxEnvironmentKeyLength;
+        out->max_environment_value_length = hk::userspace::kMaxEnvironmentValueLength;
+        out->max_pipes = hk::userspace::kMaxPipes;
+        out->pipe_capacity = hk::userspace::kPipeCapacity;
+        out->max_cpus = hk::cpu::kMaxCpus;
+        out->pmm_bitmap_pages = hk::mm::kPmmBitmapPages;
+        out->mounted_fat_path_capacity = hk::fs::mounted_fat_path_capacity();
+        return {1, kErrorNone};
+    }
     case Number::ReadKernelLog: {
         auto* out = reinterpret_cast<char*>(arg0);
         if (!user_buffer_writable(out, arg1)) return {0, kErrorInvalidPointer};
@@ -1296,6 +1321,22 @@ bool self_test() {
         return false;
     }
     hk::log(hk::LogLevel::Info, "syscall system info self-test");
+    hybrid::LimitsInfo limits_info{};
+    auto limits_result = dispatch(static_cast<uint64_t>(Number::GetLimitsInfo), reinterpret_cast<uint64_t>(&limits_info), 0, 0, 0);
+    if (limits_result.error != kErrorNone || limits_result.value != 1 ||
+        limits_info.max_boot_modules < system_info.boot_module_count ||
+        limits_info.max_vfs_nodes < hk::fs::vfs().node_count() ||
+        limits_info.max_process_file_descriptors < 3 ||
+        limits_info.max_pipes == 0 || limits_info.pipe_capacity == 0 ||
+        limits_info.max_cpus < system_info.boot_info_version ||
+        limits_info.pmm_bitmap_pages == 0 ||
+        limits_info.mounted_fat_path_capacity < limits_info.max_boot_modules) {
+        hk::log_hex(hk::LogLevel::Error, "syscall self-test limits-info error", limits_result.error);
+        hk::log_hex(hk::LogLevel::Error, "syscall self-test limits-info value", limits_result.value);
+        hk::log_hex(hk::LogLevel::Error, "syscall self-test limits-info boot modules", limits_info.max_boot_modules);
+        return false;
+    }
+    hk::log(hk::LogLevel::Info, "syscall limits info self-test");
     char kernel_log_sample[128]{};
     auto kernel_log_read = dispatch(static_cast<uint64_t>(Number::ReadKernelLog), reinterpret_cast<uint64_t>(kernel_log_sample), sizeof(kernel_log_sample), 0, 0);
     if (kernel_log_read.error != kErrorNone || kernel_log_read.value == 0) {

@@ -2066,6 +2066,10 @@ Vfs& vfs() {
     return instance;
 }
 
+uint32_t mounted_fat_path_capacity() {
+    return kMaxMountedFatNodes;
+}
+
 void Vfs::initialize(const hybrid::BootInfo& boot) {
     count_ = 0;
     next_handle_id_ = 1;
@@ -3216,6 +3220,8 @@ bool self_test() {
     if (!pipeinfo_cmd || pipeinfo_cmd->type != NodeType::MemoryFile || pipeinfo_cmd->size < 4) return false;
     const Node* pmap_cmd = vfs().find("/bin/pmap.elf");
     if (!pmap_cmd || pmap_cmd->type != NodeType::MemoryFile || pmap_cmd->size < 4) return false;
+    const Node* limits_cmd = vfs().find("/bin/limits.elf");
+    if (!limits_cmd || limits_cmd->type != NodeType::MemoryFile || limits_cmd->size < 4) return false;
     const Node* kill_cmd = vfs().find("/bin/kill.elf");
     if (!kill_cmd || kill_cmd->type != NodeType::MemoryFile || kill_cmd->size < 4) return false;
     const Node* killall_cmd = vfs().find("/bin/killall.elf");

@@ -4,6 +4,7 @@
 #include "hybrid/boot_info.hpp"
 namespace hk::mm {
 constexpr uint64_t kPageSize = 4096;
+constexpr uint64_t kPmmBitmapPages = 1024 * 1024;
 constexpr uint64_t align_down(uint64_t value, uint64_t align = kPageSize) { return value & ~(align - 1); }
 constexpr uint64_t align_up(uint64_t value, uint64_t align = kPageSize) { return (value + align - 1) & ~(align - 1); }
 
@@ -42,8 +43,7 @@ public:
     PhysicalMemoryDiagnostics diagnostics() const { return diagnostics_; }
     uint64_t free_run_count(uint64_t order) const;
 private:
-    static constexpr uint64_t kMaxPages = 1024 * 1024;
-    uint8_t bitmap_[kMaxPages / 8]{};
+    uint8_t bitmap_[kPmmBitmapPages / 8]{};
     uint64_t total_pages_ = 0;
     uint64_t free_pages_ = 0;
     uint64_t scan_hint_ = 0;

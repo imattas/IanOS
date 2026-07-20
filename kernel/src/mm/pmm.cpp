@@ -13,14 +13,14 @@ PhysicalMemoryManager& pmm() {
 }
 
 void PhysicalMemoryManager::set_used(uint64_t page, bool used) {
-    if (page >= kMaxPages) return;
+    if (page >= kPmmBitmapPages) return;
     uint8_t mask = static_cast<uint8_t>(1u << (page & 7));
     if (used) bitmap_[page >> 3] |= mask;
     else bitmap_[page >> 3] &= static_cast<uint8_t>(~mask);
 }
 
 bool PhysicalMemoryManager::is_used(uint64_t page) const {
-    if (page >= kMaxPages) return true;
+    if (page >= kPmmBitmapPages) return true;
     return bitmap_[page >> 3] & static_cast<uint8_t>(1u << (page & 7));
 }
 
@@ -43,7 +43,7 @@ void PhysicalMemoryManager::initialize(const hybrid::BootInfo& boot) {
         if (r.base + r.length > stats_.highest_physical) stats_.highest_physical = r.base + r.length;
         uint64_t first = align_up(r.base) / kPageSize;
         uint64_t last = align_down(r.base + r.length) / kPageSize;
-        if (last > kMaxPages) last = kMaxPages;
+        if (last > kPmmBitmapPages) last = kPmmBitmapPages;
         if (last > total_pages_) total_pages_ = last;
         if (r.type == hybrid::MemoryType::Usable || r.type == hybrid::MemoryType::BootServices) {
             stats_.usable_bytes += r.length;

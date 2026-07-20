@@ -255,6 +255,9 @@ PID argument it reports that process.
 `/bin/version.elf` cross-checks `GetSystemInfo` against
 `/proc/sys/kernel/osrelease` and `/proc/sys/kernel/version` so release metadata
 is visible through one command and validated across both ABI paths.
+`/bin/limits.elf` reads the kernel limit ABI and reports fixed capacities for
+boot modules, VFS tables, process descriptors, pipes, CPU slots, PMM bitmap
+coverage, and boot FAT path tracking alongside selected live counts.
 `/bin/kmsg.elf` reads `/proc/kmsg` through ordinary VFS open/read syscalls and
 streams the retained kernel ring buffer with byte and line counters, while
 `/bin/dmesg.elf` continues to exercise the direct kernel-log syscall.
